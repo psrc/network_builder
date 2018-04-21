@@ -1,0 +1,13 @@
+data_path : 'D:/stefan/GDB_Data'
+
+model_year: 2014
+
+main_log_file : 'run_log'
+
+# Attributes in addition to the IJ/JI attributes that can get updated by projects
+project_update_attributes : ['projRteID', 'Change_Typ']
+
+# Projects are buffered before performing spatial join on edges to help select
+# Edges that may not be perfectly covered by project routes. Adjusting this could 
+# reduce errors reported in log file. 
+'project_buffer_dist' : 1
