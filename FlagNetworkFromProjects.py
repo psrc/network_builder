@@ -109,7 +109,8 @@ class FlagNetworkFromProjects(object):
                         edge_dict = self.route_edges_dict[node_list[0], node_list[1]]
                         # has the edge dict already been added?
                         if edge_dict in proj_edge_list:
-                            self._logger.info( 'Edge ' + str(node_list[0]) + '-' + str(node_list[1])  + ' already tagged, check ' + str(int(project.projRteID)) + ' to see if digizited correctly.')
+                            self._logger.info( 'Edge ' + str(node_list[0]) + '-' + str(node_list[1])  + ' already tagged by this project, check ' + str(int(project.projRteID)) + 
+                                              ' to see if digizited correctly.')
                         # Check to see if this edge should be updated with this project
                         elif edge_dict['PSRCEdgeID'] in update_edges:
                             # Sometimes a project that goes back in on itself will select the same edge twice. Prevent this by removing the edge from update_edges. 
@@ -120,7 +121,9 @@ class FlagNetworkFromProjects(object):
                         node_list.pop(0)
                     else:
                         # Think about adding these as they are most likely valid edges that did not get selected because of bad Project line work
-                        self._logger.info('Edge ' + str(node_list[0]) + '-' + str(node_list[1])  + ' was not selected as part of project ' + str(int(project.projRteID)) + '. Check to make sure project route is covering edges.')
+                        self._logger.info('Edge ' + str(node_list[0]) + '-' + str(node_list[1])  + 
+                                          ' was not selected as part of project ' + str(int(project.projRteID)) 
+                                          + '. The edge may have been added by another project. If not, check to make sure project route is covering edges.')
                         node_list.pop(0)
 
         return pd.DataFrame(proj_edge_list)

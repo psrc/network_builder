@@ -104,16 +104,16 @@ def get_potential_thin_nodes(edges):
 
 # Get nodes/edges that cannot be thinned
 no_thin_edge_list = edges_from_turns(gdf_TurnMovements)
-no_thin_node_list = nodes_from_edges(no_thin_edge_list, gdf_TransRefEdges)
+no_thin_node_list = nodes_from_edges(no_thin_edge_list, scenario_edges)
 
 # Get potential nodes to be thinned:
-potential_thin_nodes = get_potential_thin_nodes(gdf_TransRefEdges)
+potential_thin_nodes = get_potential_thin_nodes(scenario_edges)
 potential_thin_nodes = [x for x in potential_thin_nodes if x not in no_thin_node_list]
 
 logger.info(" %s Potential nodes to thin", len(potential_thin_nodes))
 
-test = ThinNetwork(gdf_TransRefEdges, potential_thin_nodes)
-scenario_edges = gdf_TransRefEdges
+test = ThinNetwork(scenario_edges, potential_thin_nodes)
+scenario_edges = test.thinned_network_gdf
 
 
 #x = 0
@@ -196,7 +196,7 @@ scenario_edges = gdf_TransRefEdges
     #    print e
     #    continue
 
-gdf_TransRefEdges.to_file(r'R:\Stefan\GDB_data\ScenarioEdges2.shp')
+scenario_edges.to_file(r'R:\Stefan\GDB_data\ScenarioEdges3.shp')
 
 end_time = datetime.datetime.now()
 elapsed_total = end_time - start_time
