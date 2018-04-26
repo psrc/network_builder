@@ -2,109 +2,174 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import LineString
 import log_controller
+import networkx as nx
+from networkx.algorithms.components import *
+import copy
+from boltons import dictutils
 
 class ThinNetwork(object):
-    def __init__(self, network_gdf, thin_nodes_list):
+    def __init__(self, network_gdf, no_thin_nodes_list):
         self.network_gdf = network_gdf
-        self.thin_nodes_list = thin_nodes_list
+        self.thin_nodes_list = no_thin_nodes_list
+        #self.sub_net = self._get_sub_net()
         self._logger = log_controller.logging.getLogger('main_logger')
         self.thinned_network_gdf = self._thin_network()
-    
-    def _compare_attributes(self, row1, row2, row2_dir= 'IJ'):
-        df1 = pd.DataFrame(row1).T
-        df2 = pd.DataFrame(row2).T
-        # get all the directional columns
-        ij_cols = [x for x in df1 if x[0:2] == "IJ" or x[0:2] == "JI" ]
-        # switch IJ and JI columns
-        ji_cols = [x[1] + x[0] + x[2:] for x in ij_cols]
-        ij_cols = ['FacilityTy', 'Modes', 'Oneway', 'CountID', 'CountyID'] + ij_cols
-        ji_cols = ['FacilityTy', 'Modes', 'Oneway', 'CountID', 'CountyID'] + ji_cols
-        if row2_dir == 'IJ' and len(pd.merge(df1, df2, on=ij_cols)) > 0:
-            return True
-        elif row2_dir == 'JI' and len(pd.merge(df1, df2, right_on=ij_cols, left_on=ji_cols)) > 0:
-            return True
+    def func(self, L):
+        d = {}
+        for i in range(len(L)):
+            d[i] = L[i]
+        return d
+    def _get_sub_net(self):
+            return self.network_gdf[self.network_gdf.IJ.isin (self.thin_nodes_list) | self.network_gdf.IJ.isin (self.thin_nodes_list)]
+
+    def _compare_attributes(self, edge1, edge2, edge2_dir= 'IJ'):
+        non_dir_cols = ['FacilityTy', 'Modes', 'Oneway', 'CountID', 'CountyID'] 
+        ij_cols = [x for x in self.network_gdf if x[0:2] == "IJ" or x[0:2] == "JI" ]
+        compare_cols = non_dir_cols + ij_cols
+        compare_atts1 = {key: value for (key, value) in edge1.iteritems() if key in compare_cols}
+        
+        if edge2_dir =='IJ':
+            compare_atts2 = {key: value for (key, value) in edge2.iteritems() if key in compare_cols}
+            if compare_atts1 == compare_atts2:
+                return True
+            else:
+                return False
+        elif edge2_dir =='JI': 
+            compare_atts2 = {key[1] + key[0] + key[2:] : value for (key, value) in edge2.iteritems() if key in ij_cols}
+            compare_atts2.update({key: value for (key, value) in edge2.iteritems() if key in non_dir_cols})
+            if compare_atts1 == compare_atts2:
+                return True
+            else:
+                return False
         else:
             return False
 
     def _thin_network(self):
+        ij_cols = [x for x in self.network_gdf if x[0:2] == "IJ" or x[0:2] == "JI" ]
+        cols = ['PSRCEdgeID', 'FacilityTy', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry'] + ij_cols
+        G = nx.from_pandas_edgelist(self.network_gdf, 'INode', 'JNode', cols)
         i = 0
         for node in self.thin_nodes_list:
             if i % 1000 == 0:
                 print("%d Nodes Processed" % (i))
-            # get edges that have this node
-            df = self.network_gdf[(self.network_gdf.INode == node) | (self.network_gdf.JNode == node)].copy()
-            # only two edge intersections should be thinned
-            if len(df) <> 2:
+            edges = list(G.edges(node))
+            if len(edges) <> 2:
                 print 'Node ' + str(node) + ' does not have exactly two edges'
+            
+            
             else:
+                edge_1 = G.get_edge_data(edges[0][0], edges[0][1])
+                edge_2 = G.get_edge_data(edges[1][0], edges[1][1])
+                #edge1 = G.get_edge_data(path[y], path[y+1])
+                # get edges that have this node
+                #df = self.network_gdf[(self.network_gdf.INode == node) | (self.network_gdf.JNode == node)].copy()
+                # only two edge intersections should be thinned
                 # get each edge
-                a_row = df.ix[df.index[0]]
-                b_row = df.ix[df.index[1]]
-                if a_row.geometry.type =='MultiLineString':
-                    print 'edge ' + str(int(a_row.PSRCEdgeID)) + ' is a multipart feature. Please fix.'  
-                elif b_row.geometry.type =='MultiLineString':
-                    print 'edge ' + str(int(b_row.PSRCEdgeID)) + ' is a multipart feature. Please fix.'  
+                #a_row = df.ix[df.index[0]]
+                #b_row = df.ix[df.index[1]]
+                if edge_1['geometry'].type =='MultiLineString':
+                    print 'edge ' + str(edge_1['PSRCEdgeID']) + ' is a multipart feature. Please fix.'  
+                elif edge_2['geometry'].type =='MultiLineString':
+                    print 'edge ' + str(edge_2['PSRCEdgeID']) + ' is a multipart feature. Please fix.'  
                 else:
-                    a_coords = list(a_row.geometry.coords)
-                    b_coords = list(b_row.geometry.coords)
+                    a_coords = list(edge_1['geometry'].coords)
+                    b_coords = list(edge_2['geometry'].coords)
                     # get the first and last coord for the two edges
                     a_test = [a_coords[0], a_coords[-1]]
                     b_test = [b_coords[0], b_coords[-1]]
                     # Are lines digitized in the same direction?
-                    if len(df.INode.value_counts()) == 2 and len(df.JNode.value_counts()) == 2 and self._compare_attributes(a_row, b_row, 'IJ'):
-                        # Do the first coords match or the first and last 
-                        if len(list(set(a_test).intersection(b_test))) == 0:
-                            print str(int(a_row.PSRCEdgeID)) + " " +  str(int(b_row.PSRCEdgeID)) + " are not connected!"
-                        elif a_test.index(list(set(a_test).intersection(b_test))[0]) == 0 :
-                            order = 'ba'
-                            a_coords.pop(0)
-                            x = b_coords + a_coords 
-                            line = LineString(x)
-                            merged_row = b_row
-                            merged_row['geometry'] = line 
-                            merged_row.JNode = int(a_row.JNode)
-                            self.network_gdf = self.network_gdf[(self.network_gdf.PSRCEdgeID != int(a_row.PSRCEdgeID)) & (self.network_gdf.PSRCEdgeID != int(b_row.PSRCEdgeID))]
-                            self.network_gdf.loc[self.network_gdf.index.max() + 1] = merged_row
-                        else:
-                            order = 'ab'
-                            b_coords.pop(0)
-                            x = a_coords + b_coords 
-                            line = LineString(x)
-                            merged_row = a_row
-                            merged_row['geometry'] = line 
-                            merged_row.JNode = int(b_row.JNode)
-                            self.network_gdf = self.network_gdf[(self.network_gdf.PSRCEdgeID != int(a_row.PSRCEdgeID)) & (self.network_gdf.PSRCEdgeID != int(b_row.PSRCEdgeID))]
-                            self.network_gdf.loc[self.network_gdf.index.max() + 1] = merged_row
-        
-                    # Are lines digitized towards each other:
-                    elif  len(df.JNode.value_counts()) == 1 and self._compare_attributes(a_row, b_row, 'JI'):
-                        #Flip the b line
-                        b_coords.reverse()
-                        # drop the duplicate coord
-                        b_coords.pop(0)
-                        x = a_coords + b_coords
-                        line = LineString(x)
-                        merged_row = a_row
-                        merged_row['geometry'] = line 
-                        merged_row.INode = int(a_row.INode)
-                        merged_row.JNode = int(b_row.INode)
-                        self.network_gdf = self.network_gdf[(self.network_gdf.PSRCEdgeID != int(a_row.PSRCEdgeID)) & (self.network_gdf.PSRCEdgeID != int(b_row.PSRCEdgeID))]
-                        self.network_gdf.loc[self.network_gdf.index.max() + 1] = merged_row
-
-                    # Lines must be digitized away from each other:
+                    if edge_1['INode'] <> edge_2['INode'] and edge_1['JNode'] <> edge_2['JNode']:
+                        edge_dir = 'with'
+                        merge = self._compare_attributes(edge_1, edge_2, 'IJ')
                     else:
-                        if self._compare_attributes(a_row, b_row, 'JI'):
+                        edge_dir = 'against'
+                        merge = self._compare_attributes(edge_1, edge_2, 'JI')
+                     # Do the first coords match or the first and last 
+                    if merge:
+                        if edge_dir == 'with':
+                            if len(list(set(a_test).intersection(b_test))) == 0:
+                                print str(edge_1['PSRCEdgeID']) + " " +  str(edge_2['PSRCEdgeID']) + " are not connected!"
+                         
+                            elif a_test.index(list(set(a_test).intersection(b_test))[0]) == 0 :
+                                order = 'ba'
+                                a_coords.pop(0)
+                                x = b_coords + a_coords 
+                                line = LineString(x)
+                                merged_row = edge_2
+                                merged_row['geometry'] = line 
+                                merged_row['JNode'] = edge_1['JNode']
+                                G.remove_edge(edges[0][0], edges[0][1])
+                                G.remove_edge(edges[1][0], edges[1][1])
+                                G.add_edge(merged_row['INode'], merged_row['JNode'], **merged_row)
+                            else:
+                                order = 'ab'
+                                b_coords.pop(0)
+                                x = a_coords + b_coords 
+                                line = LineString(x)
+                                merged_row = edge_1
+                                merged_row['geometry'] = line 
+                                merged_row['JNode'] = edge_2['JNode']
+                                G.remove_edge(edges[0][0], edges[0][1])
+                                G.remove_edge(edges[1][0], edges[1][1])
+                                G.add_edge(merged_row['INode'], merged_row['JNode'], **merged_row)
+                      
+        
+                            # Are lines digitized towards each other:
+                        elif edge_1['JNode'] == edge_2['JNode']:
+                            #Flip the b line
+                            b_coords.reverse()
+                            # drop the duplicate coord
+                            b_coords.pop(0)
+                            x = a_coords + b_coords
+                            line = LineString(x)
+                            merged_row = edge_1
+                            merged_row['geometry'] = line 
+                            merged_row['INode'] = edge_1['INode']
+                            merged_row['JNode'] = edge_2['INode']
+                            G.remove_edge(edges[0][0], edges[0][1])
+                            G.remove_edge(edges[1][0], edges[1][1])
+                            G.add_edge(merged_row['INode'], merged_row['JNode'], **merged_row)                
+                        
+
+                        # Lines must be digitized away from each other:
+                        else:
                             # drop the duplicate coord
                             b_coords.pop(0)
                             #Flip the b line
                             b_coords.reverse()
                             x = b_coords + a_coords
                             line = LineString(x)
-                            merged_row = a_row
+                            merged_row = edge_1
                             merged_row['geometry'] = line 
-                            merged_row.INode = int(b_row.JNode)
-                            merged_row.JNode = int(a_row.JNode)
-                            self.network_gdf = self.network_gdf[(self.network_gdf.PSRCEdgeID != int(a_row.PSRCEdgeID)) & (self.network_gdf.PSRCEdgeID != int(b_row.PSRCEdgeID))]
-                            self.network_gdf.loc[self.network_gdf.index.max() + 1] = merged_row
+                            merged_row['INode'] = edge_2['JNode']
+                            merged_row['JNode'] = edge_1['JNode']
+                            G.remove_edge(edges[0][0], edges[0][1])
+                            G.remove_edge(edges[1][0], edges[1][1])
+                            G.add_edge(merged_row['INode'], merged_row['JNode'], **merged_row)
+                            
+                            
             i = i + 1
-        return self.network_gdf
+
+        edge_list = []
+        for x in G.edges.iteritems():
+            edge_list.append(x[1])
+        #y = gpd.GeoDataFrame(test)
+
+        return gpd.GeoDataFrame(edge_list)
+
+    def _thin_network2(self):
+        g = nx.from_pandas_edgelist(self.network_gdf, 'INode', 'JNode', ['PSRCEdgeID'])
+        f = nx.Graph()                                                                                                                                     
+        fedges = filter(lambda x: g.degree()[x[0]] == 2 and g.degree()[x[1]]==2, G.edges)
+        # get rid of any edge that has a node that should not be thinned
+        fedges = [x for x in fedges if (x[0] not in no_thin_node_list) and (x[1] not in no_thin_node_list)] 
+        f.add_edges_from(fedges)
+        connected = connected_components(f)
+        for segments in connected:
+            df = self.network_gdf[(self.network_gdf.INode == node) | (self.network_gdf.JNode == node)].copy()  
+
+#test = []
+#for x in G.edges.iteritems():
+#    test.append(x[1])
+#y = gpd.GeoDataFrame(test)
+#y.to_file('d:/test100.shp')
