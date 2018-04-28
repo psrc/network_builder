@@ -4,10 +4,12 @@ import pandas as pd
 import os
 import numpy as np
 from shapely.geometry import LineString
+from shapely.geometry import Point
 #import data_sources
 import yaml
 from FlagNetworkFromProjects import *
 from ThinNetwork import *
+from CreateTimeOfDayNetworks import *
 import logging
 import log_controller
 import datetime
@@ -27,13 +29,17 @@ from data_sources import *
 logger.info(" %s finished data import", datetime.datetime.today().replace(microsecond=0))
 
 
-config = yaml.safe_load(open("R:/Stefan/GDB_data/code/config.yaml"))
-
 model_year = config['model_year']
 
-test = FlagNetworkFromProjects(gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config)
-scenario_edges = test.scenario_edges
+#logger.info(" %s starting updated network from projects", datetime.datetime.today().replace(microsecond=0))
+#test = FlagNetworkFromProjects(gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config)
+#scenario_edges = test.scenario_edges
+#logger.info(" %s finished updating network from projects", datetime.datetime.today().replace(microsecond=0))
 
+scenario_edges = gdf_TransRefEdges[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
+                                      & (gdf_TransRefEdges.ActiveLink > 0) 
+                                      & (gdf_TransRefEdges.ActiveLink <> 999))]
+scenario_edges['projRteID'] = 0
 
 def edges_from_turns(turns):
     edge_list = turns.FrEdgeID.tolist()
@@ -56,42 +62,6 @@ def get_potential_thin_nodes(edges):
     df = df[df.node_count == 2]
     return df.index.tolist()
 
-def merge_edges(geom1, geom2, path_dir, edge1_dir, edge2_dir):
-    if geom1.type =='MultiLineString':
-        print 'edge ' + str(int(a_row.PSRCEdgeID)) + ' is a multipart feature. Please fix.'  
-    elif geom2.type =='MultiLineString':
-        print 'edge ' + str(int(b_row.PSRCEdgeID)) + ' is a multipart feature. Please fix.'  
-    else:
-        a_coords = list(geom1.coords)
-        b_coords = list(geom2.coords)
-    #if edge1 is in the opposite dir, flip it:
-    if edge1_dir <> path_dir:
-        a_coords.reverse()
-    if path_dir == 'IJ':
-        if  edge2_dir == 'IJ':
-            b_coords.pop(0)
-            x = a_coords + b_coords 
-            line = LineString(x)
-        else:
-            #Flip the b line
-             b_coords.reverse()
-             # drop the duplicate coord
-             b_coords.pop(0)
-             x = a_coords + b_coords
-             line = LineString(x)
-    else:
-        if edge2_dir == 'JI':
-            a_coords.pop(0)
-            x = b_coords + a_coords 
-            line = LineString(x)
-        else:
-            a_coords.pop(0)
-            #Flip the b line
-            b_coords.reverse()
-            x = b_coords + a_coords 
-            line = LineString(x)
-    return line 
-
 
 # Get nodes/edges that cannot be thinned
 turn_edge_list = edges_from_turns(gdf_TurnMovements)
@@ -105,10 +75,52 @@ potential_thin_nodes = [x for x in potential_thin_nodes if x not in no_thin_node
 
 logger.info(" %s Potential nodes to thin", len(potential_thin_nodes))
 
-test = ThinNetwork(scenario_edges, potential_thin_nodes)
-#scenario_edges = test.thinned_network_gdf
+test = ThinNetwork(scenario_edges, gdf_Junctions, potential_thin_nodes, config)
+scenario_edges = test.thinned_network_gdf
+scenario_junctions = test.thinned_junctions_gdf
 
-scenario_edges.to_file(r'R:\Stefan\GDB_data\ScenarioEdges3.shp')
+test = CreateTimeOfDayNetworks(scenario_edges, scenario_junctions, 'AM', config)
+
+#lenHOV = 0.01 * 5280
+#Leng = getWeaveLen(lType)
+#        moveX = (Math.Sqrt(Leng)) / 2
+#        moveX = Math.Sqrt(moveX)
+#        moveY = moveX 'move the same amount as x
+
+#        g_xMove = moveX
+#        g_yMove = moveY
+
+ 
+
+#def _apply_parallel_offset(geometry):
+#    coords = geometry.coords
+#    return LineString([(x[0] + 3.63, x[1] + 3.63) for x in coords])
+    
+#def _get_from_coords(geometry):
+#    return geometry.coords[0]
+#def _get_to_coords(geometry):
+#    return geometry.coords[-1]
+#def _shift_junctions(geometry, distance):
+#    coord = geometry.coords
+#    return Point([(x[0] + distance, x[1] + distance) for x in coord])
+
+#hov_edges = scenario_edges[(scenario_edges.IJLanesHOVAM > 0) | (scenario_edges.JILanesHOVAM > 0)]
+#test = hov_edges.geometry.apply(_apply_parallel_offset)
+#hov_edges.update(test)
+#hov_i = hov_edges.geometry.apply(_get_from_coords)
+#hov_j = hov_edges.geometry.apply(_get_to_coords)
+##scenario_edges.ix[scenario_edges.index[0]].geometry.parallel_offset(50, 'left')
+
+scenario_edges = pd.concat([scenario_edges, pd.DataFrame(test.hov_weave_edges)])
+scenario_edges = pd.concat([scenario_edges, pd.DataFrame(test.hov_edges)])
+
+scenario_junctions =  pd.concat([scenario_junctions, test.hov_junctions])
+
+scenario_junctions.to_file('d:/scenario_junctions1.shp')
+scenario_edges.to_file('d:/scenario_edges1.shp')
+
+
+#scenario_edges.to_file(r'R:\Stefan\GDB_data\ScenarioEdges3.shp')
 
 end_time = datetime.datetime.now()
 elapsed_total = end_time - start_time

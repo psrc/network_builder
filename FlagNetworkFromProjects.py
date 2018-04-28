@@ -12,8 +12,6 @@ class FlagNetworkFromProjects(object):
         self.junctions_gdf = junctions_gdf
         self.config = config
         self._logger = log_controller.logging.getLogger('main_logger')
-        self._logger.info('logger started!')
-
         self.route_edges = self._get_route_edges()
         self.route_junctions = self._get_route_junctions()
         self.route_junctions_coords = self._junctions_to_coords()
@@ -155,6 +153,7 @@ class FlagNetworkFromProjects(object):
         merged_projects = merged_projects[self.config['project_update_attributes'] + dir_columns]
         scenario_edges.set_index('PSRCEdgeID', inplace = True)
         merged_projects.replace(-1, np.NaN, inplace = True)
+        # update scenario_edges with project attribues
         scenario_edges.update(merged_projects)
         scenario_edges.reset_index(inplace = True)
         return scenario_edges

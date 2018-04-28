@@ -10,4 +10,9 @@ project_update_attributes : ['projRteID', 'Change_Typ']
 # Projects are buffered before performing spatial join on edges to help select
 # Edges that may not be perfectly covered by project routes. Adjusting this could 
 # reduce errors reported in log file. 
-'project_buffer_dist' : 1
+project_buffer_dist : 1
+
+# How far to shift HOV lanes from gP lanes:
+hov_shift_dist : 1.906090351
+
+node_offset : 4000
