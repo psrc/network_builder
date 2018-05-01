@@ -33,6 +33,7 @@ class CreateTimeOfDayNetworks(object):
         # update the the geometry column
         hov_edges.update(shift_edges)
         #hov_edges = _update_hov_ij_nodes(self, hov_edges)
+        hov_edges['FacilityTy'] = 99
         return hov_edges
 
     def _get_hov_junctions(self):
@@ -69,6 +70,7 @@ class CreateTimeOfDayNetworks(object):
         weave_edges.drop('geometry_y', 1, inplace=True)
         weave_edges.drop('geometry_x', 1, inplace=True)
         weave_edges['NewINode'] = weave_edges['ScenarioNodeID'] 
+        weave_edges['FacilityTy'] = 99
         weave_edges = gpd.GeoDataFrame(weave_edges)
         return weave_edges
 

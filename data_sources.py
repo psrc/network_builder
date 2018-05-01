@@ -16,20 +16,20 @@ model_year = config['model_year']
 # modeAttributes
 df_modeAttributes = pd.read_csv(os.path.join(data_path, 'modeAttributes.csv'))
 # Edges
-gdf_TransRefEdges = gpd.read_file(os.path.join(data_path, 'TransRefEdges_test.shp'))
+gdf_TransRefEdges = gpd.read_file(os.path.join(data_path, 'TransRefEdges.shp'))
 gdf_TransRefEdges = gdf_TransRefEdges[gdf_TransRefEdges.length > 0]
 
 #gdf_TransRefEdges = gpd.read_file(os.path.join(data_path, 'test.shp'))
 gdf_TransRefEdges = gdf_TransRefEdges.merge(df_modeAttributes, how = 'left', on = 'PSRCEdgeID')
 
 ## TransitLines
-#gdf_TransitLines = gpd.read_file(os.path.join(data_path, 'TransitLines.shp'))
-#gdf_TransitLines = gdf_TransitLines[gdf_TransitLines.InServiceD==model_year]
+gdf_TransitLines = gpd.read_file(os.path.join(data_path, 'TransitLines.shp'))
+gdf_TransitLines = gdf_TransitLines[gdf_TransitLines.InServiceD==model_year]
 #gdf_TransitLines = gdf_TransitLines[gdf_TransitLines.LineID == 114574]
 
 ## TransitPoints
-#gdf_TransitPoints = gpd.read_file(os.path.join(data_path, 'TransitPoints.shp'))
-#gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(gdf_TransitLines.LineID)]
+gdf_TransitPoints = gpd.read_file(os.path.join(data_path, 'TransitPoints.shp'))
+gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(gdf_TransitLines.LineID)]
 
 
 

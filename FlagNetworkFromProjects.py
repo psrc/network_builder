@@ -138,10 +138,10 @@ class FlagNetworkFromProjects(object):
         ij_proj_edges = project_edges[project_edges.dir == "IJ"].copy()
         ji_proj_edges =  project_edges[project_edges.dir == "JI"].copy()
         # get all the directional columns
-        dir_columns = [x for x in ij_proj_edges if x[0:2] == "IJ" or x[0:2] == "JI" ]
+        #dir_columns = [x for x in ij_proj_edges if x[0:2] == "IJ" or x[0:2] == "JI" ]
         # switch IJ and JI columns
-        switch_columns = [x[1] + x[0] + x[2:] for x in dir_columns]
-        rename_dict = dict(zip(dir_columns, switch_columns))
+        switch_columns = [x[1] + x[0] + x[2:] for x in self.config['dir_columns']]
+        rename_dict = dict(zip(self.config['dir_columns'], switch_columns))
         # switch IJ & JI attributes for edges that are digitized in the opposite direction of the project
         ji_proj_edges = ji_proj_edges.rename(columns = rename_dict)
         # add a column to hold the project route id:
@@ -150,7 +150,7 @@ class FlagNetworkFromProjects(object):
         merged_projects = pd.concat([ji_proj_edges, ij_proj_edges])
         merged_projects.set_index('PSRCEdgeID', inplace = True)
 
-        merged_projects = merged_projects[self.config['project_update_attributes'] + dir_columns]
+        merged_projects = merged_projects[self.config['project_update_columns'] + self.config['dir_columns']]
         scenario_edges.set_index('PSRCEdgeID', inplace = True)
         merged_projects.replace(-1, np.NaN, inplace = True)
         # update scenario_edges with project attribues

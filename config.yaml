@@ -4,9 +4,21 @@ model_year: 2014
 
 main_log_file : 'run_log'
 
-# Attributes in addition to the IJ/JI attributes that can get updated by projects
-project_update_attributes : ['projRteID', 'Change_Typ']
+# Directional attributes used for project updates & network thinning.
+dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLanesGPNI', 'JILanesGPAM', 
+'JILanesGPMD', 'JILanesGPPM', 'JILanesGPEV', 'JILanesGPNI', 'IJlanesGPadjust', 'JIlanesGPadjust', 
+'IJLanesHOVAM', 'IJLanesHOVMD', 'IJLanesHOVPM', 'IJLanesHOVEV', 'IJLanesHOVNI', 'JILanesHOVAM', 
+'JILanesHOVMD', 'JILanesHOVPM', 'JILanesHOVEV', 'JILanesHOVNI', 'IJSpeedLimit', 'JISpeedLimit', 
+'IJVDFunc', 'JIVDFunc', 'IJLaneCapGP', 'IJLaneCapHOV', 'JILaneCapGP', 'JILaneCapHOV', 'IJSideWalks', 
+'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK']
 
+# Non-Directional attributes used for networkt thnning.
+non_dir_columns : ['FacilityTy', 'projRouteID', 'Modes', 'Oneway', 'CountID', 'CountyID']
+
+# Attributes in addition to the dir_attributes that can get updated by projects
+project_update_columns : ['projRteID', 'Change_Typ']
+
+network_thin_columns : ['PSRCEdgeID', 'FacilityTy', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID']
 # Projects are buffered before performing spatial join on edges to help select
 # Edges that may not be perfectly covered by project routes. Adjusting this could 
 # reduce errors reported in log file. 

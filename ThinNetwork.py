@@ -21,9 +21,9 @@ class ThinNetwork(object):
             return self.network_gdf[self.network_gdf.IJ.isin (self.thin_nodes_list) | self.network_gdf.IJ.isin (self.thin_nodes_list)]
 
     def _compare_attributes(self, edge1, edge2, edge2_dir= 'IJ'):
-        non_dir_cols = ['FacilityTy', 'projRouteID', 'Modes', 'Oneway', 'CountID', 'CountyID'] 
-        ij_cols = [x for x in self.network_gdf if x[0:2] == "IJ" or x[0:2] == "JI" ]
-        compare_cols = non_dir_cols + ij_cols
+        #self.config['non_dir_columns'] = ['FacilityTy', 'projRouteID', 'Modes', 'Oneway', 'CountID', 'CountyID'] 
+        #ij_cols = [x for x in self.network_gdf if x[0:2] == "IJ" or x[0:2] == "JI" ]
+        compare_cols = self.config['non_dir_columns'] + self.config['dir_columns']
         compare_atts1 = {key: value for (key, value) in edge1.iteritems() if key in compare_cols}
         
         if edge2_dir =='IJ':
@@ -33,8 +33,8 @@ class ThinNetwork(object):
             else:
                 return False
         elif edge2_dir =='JI': 
-            compare_atts2 = {key[1] + key[0] + key[2:] : value for (key, value) in edge2.iteritems() if key in ij_cols}
-            compare_atts2.update({key: value for (key, value) in edge2.iteritems() if key in non_dir_cols})
+            compare_atts2 = {key[1] + key[0] + key[2:] : value for (key, value) in edge2.iteritems() if key in self.config['dir_columns']}
+            compare_atts2.update({key: value for (key, value) in edge2.iteritems() if key in self.config['non_dir_columns']})
             if compare_atts1 == compare_atts2:
                 return True
             else:
@@ -43,8 +43,8 @@ class ThinNetwork(object):
             return False
 
     def _thin_network(self):
-        ij_cols = [x for x in self.network_gdf if x[0:2] == "IJ" or x[0:2] == "JI" ]
-        cols = ['PSRCEdgeID', 'FacilityTy', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID'] + ij_cols
+        #ij_cols = [x for x in self.network_gdf if x[0:2] == "IJ" or x[0:2] == "JI" ]
+        cols = self.config['network_thin_columns'] + self.config['dir_columns']
         G = nx.from_pandas_edgelist(self.network_gdf, 'INode', 'JNode', cols)
         i = 0
         for node in self.thin_nodes_list:

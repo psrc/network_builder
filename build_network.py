@@ -10,6 +10,7 @@ import yaml
 from FlagNetworkFromProjects import *
 from ThinNetwork import *
 from CreateTimeOfDayNetworks import *
+from CreateTransitSegmentTable import *
 import logging
 import log_controller
 import datetime
@@ -31,7 +32,7 @@ logger.info(" %s finished data import", datetime.datetime.today().replace(micros
 
 model_year = config['model_year']
 
-#logger.info(" %s starting updated network from projects", datetime.datetime.today().replace(microsecond=0))
+logger.info(" %s starting updated network from projects", datetime.datetime.today().replace(microsecond=0))
 #test = FlagNetworkFromProjects(gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config)
 #scenario_edges = test.scenario_edges
 #logger.info(" %s finished updating network from projects", datetime.datetime.today().replace(microsecond=0))
@@ -47,7 +48,7 @@ def edges_from_turns(turns):
     return edge_list
 
 def nodes_from_transit(transit_points):
-    return set(transit_points.PSRCJunctI.tolist)
+    return list(set(transit_points.PSRCJunctI.tolist()))
 
 def nodes_from_edges(list_of_edges, edges):
     edges = edges[edges.PSRCEdgeID.isin(list_of_edges)]
@@ -66,8 +67,8 @@ def get_potential_thin_nodes(edges):
 # Get nodes/edges that cannot be thinned
 turn_edge_list = edges_from_turns(gdf_TurnMovements)
 no_thin_node_list = nodes_from_edges(turn_edge_list, scenario_edges)
-#transit_node_list = nodes_from_transit(gdf_TransitPoints)
-#no_thin_node_list = list(set(no_thin_node_list + transit_node_list))
+transit_node_list = nodes_from_transit(gdf_TransitPoints)
+no_thin_node_list = list(set(no_thin_node_list + transit_node_list))
 
 # Get potential nodes to be thinned:
 potential_thin_nodes = get_potential_thin_nodes(scenario_edges)
@@ -115,6 +116,9 @@ scenario_edges = pd.concat([scenario_edges, pd.DataFrame(test.hov_weave_edges)])
 scenario_edges = pd.concat([scenario_edges, pd.DataFrame(test.hov_edges)])
 
 scenario_junctions =  pd.concat([scenario_junctions, test.hov_junctions])
+
+test = CreateTransitSegmentTable(scenario_edges, gdf_TransitLines, gdf_TransitPoints, 'AM', config)
+print 'done'
 
 scenario_junctions.to_file('d:/scenario_junctions1.shp')
 scenario_edges.to_file('d:/scenario_edges1.shp')
