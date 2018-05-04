@@ -5,7 +5,7 @@ import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
 
-class CreateTimeOfDayNetworks(object):
+class BuildHOVSystem(object):
 
     def __init__(self, network_gdf, junctions_gdf, time_period, config):
         self.network_gdf = network_gdf
@@ -70,7 +70,8 @@ class CreateTimeOfDayNetworks(object):
         weave_edges.drop('geometry_y', 1, inplace=True)
         weave_edges.drop('geometry_x', 1, inplace=True)
         weave_edges['NewINode'] = weave_edges['ScenarioNodeID'] 
-        weave_edges['FacilityTy'] = 99
+        weave_edges['FacilityTy'] = 98
+        weave_edges['Oneway'] = 2
         weave_edges = gpd.GeoDataFrame(weave_edges)
         return weave_edges
 

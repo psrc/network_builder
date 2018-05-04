@@ -6,6 +6,7 @@ import networkx as nx
 from networkx.algorithms.components import *
 import copy
 from boltons import dictutils
+import numpy as np
 
 class ThinNetwork(object):
     def __init__(self, network_gdf, junctions_gdf, thin_nodes_list, config):
@@ -131,14 +132,22 @@ class ThinNetwork(object):
         for x in G.edges.iteritems():
             edge_list.append(x[1])
         thinned_net = gpd.GeoDataFrame(edge_list)
-        thinned_net['NewINode'] = thinned_net['INode'] + self.config['node_offset'] 
-        thinned_net['NewJNode'] = thinned_net['JNode'] + self.config['node_offset']
+        #thinned_net['NewINode'] = thinned_net['INode'] + self.config['node_offset'] 
+        #thinned_net['NewJNode'] = thinned_net['JNode'] + self.config['node_offset']
         return thinned_net
 
     def _thin_junctions(self):
         keep_nodes = list(set(self.thinned_network_gdf['INode'].tolist() + self.thinned_network_gdf['JNode'].tolist()))
         thinned_junctions = self.junctions_gdf[self.junctions_gdf['PSRCjunctI'].isin(keep_nodes)]
         thinned_junctions['ScenarioNodeID'] = thinned_junctions['PSRCjunctI'] + self.config['node_offset']
+        thinned_junctions['ScenarioNodeID'] = np.where(thinned_junctions['EMME2nodeI'] > 0, thinned_junctions['EMME2nodeI'], thinned_junctions['ScenarioNodeID'])
+        # now make a map of old to new
+        recode_dict = pd.Series(thinned_junctions.ScenarioNodeID.values, thinned_junctions.PSRCjunctI.values).to_dict()
+        #recode_edges
+        self.thinned_network_gdf['NewINode'] = self.thinned_network_gdf['INode']
+        self.thinned_network_gdf['NewJNode'] = self.thinned_network_gdf['JNode']
+        self.thinned_network_gdf['NewINode'].replace(recode_dict, inplace=True)
+        self.thinned_network_gdf['NewJNode'].replace(recode_dict, inplace=True)
         return thinned_junctions
 
     def _check_edge_connection_validity(self, node, edges, network_graph):

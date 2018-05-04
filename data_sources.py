@@ -25,9 +25,9 @@ gdf_TransRefEdges = gdf_TransRefEdges.merge(df_modeAttributes, how = 'left', on 
 ## TransitLines
 gdf_TransitLines = gpd.read_file(os.path.join(data_path, 'TransitLines.shp'))
 gdf_TransitLines = gdf_TransitLines[gdf_TransitLines.InServiceD==model_year]
-#gdf_TransitLines = gdf_TransitLines[gdf_TransitLines.LineID == 114574]
+##gdf_TransitLines = gdf_TransitLines[gdf_TransitLines.LineID == 114574]
 
-## TransitPoints
+### TransitPoints
 gdf_TransitPoints = gpd.read_file(os.path.join(data_path, 'TransitPoints.shp'))
 gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(gdf_TransitLines.LineID)]
 
