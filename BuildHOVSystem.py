@@ -28,10 +28,12 @@ class BuildHOVSystem(object):
     def _get_hov_edges(self):
         ij_field_name = 'IJLanesHOV' + self.time_period
         ji_field_name = 'JILanesHOV' + self.time_period
+        # get edges that have an hov attribute for this time period
         hov_edges = self.network_gdf[(self.network_gdf[ij_field_name] > 0) | (self.network_gdf[ji_field_name] > 0)]
-        shift_edges = hov_edges.geometry.apply(self._shift_edges, args=(self.config['hov_shift_dist'],))
+        # shift them
+        shift_edges_geom = hov_edges.geometry.apply(self._shift_edges, args=(self.config['hov_shift_dist'],))
         # update the the geometry column
-        hov_edges.update(shift_edges)
+        hov_edges.update(shift_edges_geom)
         #hov_edges = _update_hov_ij_nodes(self, hov_edges)
         hov_edges['FacilityTy'] = 99
         return hov_edges
@@ -41,7 +43,7 @@ class BuildHOVSystem(object):
         hov_junctions = self.junctions_gdf[self.junctions_gdf['PSRCjunctI'].isin(keep_nodes)]
         shift_junctions = hov_junctions.geometry.apply(self._shift_junctions, args=(self.config['hov_shift_dist'],))
         hov_junctions.update(shift_junctions)
-        hov_junctions['ScenarioNodeID'] = range(self.junctions_gdf.PSRCjunctI.max() + 1, self.junctions_gdf.PSRCjunctI.max() + len(hov_junctions) + 1)
+        hov_junctions['ScenarioNodeID'] = range(self.junctions_gdf.ScenarioNodeID.max() + 1, self.junctions_gdf.ScenarioNodeID.max() + len(hov_junctions) + 1)
         # update edge I & J nodes
         self._update_hov_ij_nodes(hov_junctions)
         return hov_junctions

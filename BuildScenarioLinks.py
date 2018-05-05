@@ -157,7 +157,7 @@ class BuildScenarioLinks(object):
         edges.direction = int(look_up_dict['direction'])
         edges.i = edges[look_up_dict['i']]
         edges.j = edges[look_up_dict['j']]
-        edges.length = edges.geometry.length
+        edges.length = edges.geometry.length/5820.0
         edges.modes = look_up_dict['modes']
         edges.type = look_up_dict['type']
         edges.lanes = look_up_dict['lanes']
@@ -171,7 +171,7 @@ class BuildScenarioLinks(object):
         edges.direction = int(look_up_dict['direction'])
         edges.i = edges[look_up_dict['i']]
         edges.j = edges[look_up_dict['j']]
-        edges.length = look_up_dict['length']
+        edges.length = look_up_dict['length']/5820.0
         edges.modes = look_up_dict['modes']
         edges.type = look_up_dict['type']
         edges.lanes = look_up_dict['lanes']
@@ -185,7 +185,7 @@ class BuildScenarioLinks(object):
         edges.direction = int(look_up_dict['direction'])
         edges.i = edges[look_up_dict['i']]
         edges.j = edges[look_up_dict['j']]
-        edges.length = edges.geometry.length
+        edges.length = edges.geometry.length/5820.0
         edges.modes = edges[look_up_dict['modes']]
         edges.type = edges[look_up_dict['type']]
         edges.lanes = edges[look_up_dict['lanes'] + self.time_period]

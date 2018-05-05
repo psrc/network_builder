@@ -35,8 +35,8 @@ walk_links:
   lanes: 1
   vdf: 9
   ul1: 0
-  ul2: 3
-  ul3: 0
+  ul2: 0
+  ul3: 3
 
 weave_links:
   direction: 1
@@ -60,8 +60,8 @@ standard_links:
   lanes: IJLanesGP
   vdf: IJVDFunc
   ul1: IJLaneCapGP
-  ul2: NewFacilit
-  ul3: IJSpeedLimit
+  ul2: IJSpeedLimit
+  ul3: NewFacilit
 
 hov_capacity: 'IJLaneCapHOV'
 
