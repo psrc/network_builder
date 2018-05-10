@@ -12,6 +12,7 @@ from ThinNetwork import *
 from BuildHOVSystem import *
 from BuildScenarioLinks import *
 from CreateTransitSegmentTable import *
+from ConfigureTransitSegments import *
 import logging
 import log_controller
 import datetime
@@ -35,6 +36,10 @@ def nodes_from_transit(transit_points):
 def nodes_from_centroids(junctions):
     centroid_junctions = junctions[junctions.EMME2nodeI > 0]
     return centroid_junctions.PSRCjunctI.tolist()
+
+def retain_junctions(junctions):
+    retain_junctions = junctions[junctions.JunctionTy == 10]
+    return retain_junctions.PSRCjunctI.tolist()
 
 def nodes_from_edges(list_of_edges, edges):
     edges = edges[edges.PSRCEdgeID.isin(list_of_edges)]
@@ -83,7 +88,8 @@ if __name__ == '__main__':
     no_thin_node_list = nodes_from_edges(turn_edge_list, scenario_edges)
 
     centroids = nodes_from_centroids(gdf_Junctions)
-    no_thin_node_list = no_thin_node_list + centroids
+    retain_junctions = retain_junctions(gdf_Junctions)
+    no_thin_node_list = no_thin_node_list + centroids + retain_junctions
 
 
     transit_node_list = nodes_from_transit(gdf_TransitPoints)
@@ -110,32 +116,56 @@ if __name__ == '__main__':
     scenario_junctions.reset_index(inplace = True)
 
     test = BuildScenarioLinks(scenario_edges, scenario_junctions, 'AM', config, False, False)
-    test.junctions.to_file('d:/test_junctions.shp', schema = {'geometry': 'Point','properties': {'is_zone': 'int', 'i' : 'int'}})
-    link_schema = collections.OrderedDict({'geometry': 'LineString','properties': {'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str',  
-                                                                                   'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 'ul2' : 'int', 
-                                                                                   'ul3' : 'int', 'PSRCEdgeID' : 'int'}})
-    test.full_network.to_file('d:/test_network.shp', schema = link_schema)
+    model_links = test.full_network
+    model_nodes = test.junctions
     
+    
+
 
     #test = CreateTransitSegmentTable(scenario_edges, gdf_TransitLines, gdf_TransitPoints, 'AM', config)
     #print 'done'
     
     # Do Trasit Stuff here
     gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctI + 4000
-    scenario_edges['weight'] = np.where(scenario_edges['FacilityTy'] == 99, .5 * scenario_edges.length, scenario_edges.length)
+    model_links['weight'] = np.where(model_links['FacilityTy'] == 99, .5 * model_links.length, model_links.length)
+     
+    # just do AM for now:
+    route_id_list = gdf_TransitLines.loc[gdf_TransitLines.Headway_AM > 0].LineID.tolist()
+    logger.info("Start tracing %s routes", len(route_id_list))
+  
+    # when tracing, only use edges that support transit
+    transit_edges = model_links.loc[(model_links.i > config['max_zone_number']) & (model_links.j > config['max_zone_number'])].copy()  
+    transit_edges = transit_edges.loc[transit_edges['modes'] <> 'wk']
     
-    route_id_list = gdf_TransitLines.LineID.tolist()
-
-    pool = mp.Pool(12, build_transit_segments_parallel.init_pool, [scenario_edges, gdf_TransitLines, gdf_TransitPoints])
+    pool = mp.Pool(12, build_transit_segments_parallel.init_pool, [transit_edges, gdf_TransitLines, gdf_TransitPoints])
     results = pool.map(build_transit_segments_parallel.trace_transit_route, route_id_list)
 
     results = [item for sublist in results for item in sublist]
     pool.close()
+
+
    
     transit_segments = pd.DataFrame(results)
+    test = ConfigureTransitSegments(transit_segments, gdf_TransitLines, model_links, config)
+    transit_segments = test.configure()
+
+    
+    #transit_segments = transit_segments.merge(model_links[['i', 'j', 'length']], how = 'left', left_on = ['INode', 'JNode'], right_on = ['i', 'j'])
+    #transit_segments['stop_to_stop_distance'] = transit_segments.groupby(['route_id', 'stop_number'])['length'].transform('sum')
+
     transit_segments.to_csv('d:/test_transit_segments.csv')
-    scenario_junctions.to_file('d:/scenario_junctions1.shp')
-    scenario_edges.to_file('d:/scenario_edges1.shp')
+
+    model_nodes.to_file('d:/test_junctions.shp', schema = {'geometry': 'Point','properties': {'is_zone': 'int', 'i' : 'int'}})
+    link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str',  
+                                                                                   'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 'ul2' : 'int', 
+                                                                                   'ul3' : 'int', 'PSRCEdgeID' : 'int', 'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str'})
+    link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
+    model_links.to_file('d:/test_network.shp', schema = link_schema)
+
+
+
+    #scenario_junctions.to_file('d:/scenario_junctions1.shp')
+    #scenario_edges.to_file('d:/scenario_edges1.shp')
 
 
     #scenario_edges.to_file(r'R:\Stefan\GDB_data\ScenarioEdges3.shp')

@@ -69,7 +69,11 @@ class BuildScenarioLinks(object):
         weave_links = self._configure_weave_link_attributes(weave_links, self.config['weave_links'])
         network.update(weave_links)
 
-        network = network[self.config['emme_link_columns'] + ['geometry', 'PSRCEdgeID']]
+        network = network[self.config['emme_link_columns'] + ['geometry', 'PSRCEdgeID', 'FacilityTy']]
+        network.i = network.i.astype(int)
+        network.j = network.j.astype(int)
+        network['id'] = network.i.astype(str) + '-' + network.j.astype(str)
+        network.set_index(network.id, inplace = True)
         return network
 
     def _update_hov_oneway(self, network):
@@ -79,6 +83,9 @@ class BuildScenarioLinks(object):
         hov_edges['Oneway'] = np.where((hov_edges['Oneway']==2) & (hov_edges['IJLanesHOV' + self.time_period] > 0) & (hov_edges['JILanesHOV' + self.time_period] == 0), 0, hov_edges['Oneway'])
         # One way JI HOV
         hov_edges['Oneway'] = np.where((hov_edges['Oneway']==2) & (hov_edges['IJLanesHOV' + self.time_period] == 0) & (hov_edges['JILanesHOV' + self.time_period] > 0), 1, hov_edges['Oneway'])
+        # Can have IJ GP and JI hov or vice versa
+        hov_edges['Oneway'] = np.where((hov_edges['Oneway']==0) & (hov_edges['IJLanesHOV' + self.time_period] == 0) & (hov_edges['JILanesHOV' + self.time_period] > 0), 1, hov_edges['Oneway'])
+        hov_edges['Oneway'] = np.where((hov_edges['Oneway']==1) & (hov_edges['IJLanesHOV' + self.time_period] > 0) & (hov_edges['JILanesHOV' + self.time_period] == 0), 0, hov_edges['Oneway'])
         return hov_edges
     
     def _switch_oneway_ji(self, network):
