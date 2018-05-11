@@ -4,7 +4,8 @@ import log_controller
 import numpy as np
 
 class ConfigureTransitSegments(object):
-    def __init__(self, transit_segments, transit_lines, model_links, config):
+    def __init__(self, time_period, transit_segments, transit_lines, model_links, config):
+        self.time_period = time_period
         self.transit_segments = transit_segments
         self.transit_lines = transit_lines
         self.model_links = model_links
@@ -12,6 +13,7 @@ class ConfigureTransitSegments(object):
         self._logger = log_controller.logging.getLogger('main_logger')
 
     def configure(self):
+        self.transit_segments.sort_values(['route_id', 'order'], inplace = True)
         self._report_errors()
         self._add_stop_column()
         self._add_stop_to_stop_distance_column()
@@ -25,14 +27,17 @@ class ConfigureTransitSegments(object):
     
     def _report_errors(self):
         if len(self.transit_segments[self.transit_segments['order'] == 9999]) > 0:
-            for row in self.transit_segments[transit_segments['order'] == 9999].iterrows():
-                self._logger.warning("Warning: No path between nodes %s and %s in route %s !" % (row[1].INode, row[1].JNode, row[1].route_id))
+            for row in self.transit_segments[self.transit_segments['order'] == 9999].iterrows():
+                self._logger.warning("Warning: No path between nodes %s and %s in %s route %s !" % (row[1].INode, row[1].JNode, self.time_period, row[1].route_id))
+                self._logger.warning("Warning: Removing all segments from this route!")
+                self.transit_segments = self.transit_segments[self.transit_segments['route_id'] <> row[1].route_id]
+
         else:
-             self._logger.warning("There are no errors in the Transit Segment Table")
+             self._logger.warning("There are no errors in the %s Transit Segment Table" % (self.time_period))
 
     def _add_stop_column(self):
-        self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(self.transit_segments.stop_number.diff()[self.transit_segments.stop_number.diff() != 0].index.values), 10, 0)
-    
+        self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(self.transit_segments.stop_number.diff()[self.transit_segments.stop_number.diff() != 0].index.values), 1, 0)
+        self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(self.transit_segments.stop_number.diff()[self.transit_segments.stop_number.diff() != 0].index.values), 1, 0)
     def _add_stop_to_stop_distance_column(self):
         self.transit_segments = self.transit_segments.merge(self.model_links[['i', 'j', 'length']], how = 'left', left_on = ['INode', 'JNode'], right_on = ['i', 'j'])
         self.transit_segments['stop_to_stop_distance'] = self.transit_segments.groupby(['route_id', 'stop_number'])['length'].transform('sum')

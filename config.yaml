@@ -1,10 +1,21 @@
-data_path : 'D:/stefan/GDB_Data/'
+data_path : 'D:/stefan/GDB_Data'
 
 model_year: 2014
 
 main_log_file : 'run_log'
 
 max_zone_number: 4000
+
+node_offset: 4000
+
+time_periods: ['AM', 'MD', 'PM', 'EV', 'NI']
+
+reversibles:
+  'AM' : [False, False]
+  'MD' : [True, False]
+  'PM' : [False, True]
+  'EV' : [False, True]
+  'NI' : [False, True]
 
 # Directional attributes used for project updates & network thinning.
 dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLanesGPNI', 'JILanesGPAM', 
@@ -35,8 +46,8 @@ walk_links:
   lanes: 1
   vdf: 9
   ul1: 0
-  ul2: 0
-  ul3: 3
+  ul2: 3
+  ul3: 0
 
 weave_links:
   direction: 1
@@ -95,5 +106,3 @@ project_buffer_dist : 1
 
 # How far to shift HOV lanes from gP lanes:
 hov_shift_dist : 1.906090351
-
-node_offset : 4000

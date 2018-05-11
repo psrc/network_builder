@@ -1,7 +1,7 @@
 import time
 import geopandas as gpd
 import pandas as pd
-import os
+import os, sys, errno
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
@@ -56,8 +56,6 @@ def get_potential_thin_nodes(edges):
 
 
 
-
-
 if __name__ == '__main__':
     config = yaml.safe_load(open("config.yaml"))
     #start = time.time()
@@ -69,7 +67,6 @@ if __name__ == '__main__':
     logger.info(" %s starting data import", datetime.datetime.today().replace(microsecond=0))
     from data_sources import *
     logger.info(" %s finished data import", datetime.datetime.today().replace(microsecond=0))
-
 
     model_year = config['model_year']
 
@@ -105,70 +102,67 @@ if __name__ == '__main__':
     scenario_edges = test.thinned_network_gdf
     scenario_junctions = test.thinned_junctions_gdf
 
-    test = BuildHOVSystem(scenario_edges, scenario_junctions, 'AM', config)
-
-    scenario_edges = pd.concat([scenario_edges, pd.DataFrame(test.hov_weave_edges)])
-    scenario_edges = pd.concat([scenario_edges, pd.DataFrame(test.hov_edges)],)
-    # need to reset so we dont have duplicate index values
-    scenario_edges.reset_index(inplace = True)
-
-    scenario_junctions =  pd.concat([scenario_junctions, test.hov_junctions])
-    scenario_junctions.reset_index(inplace = True)
-
-    test = BuildScenarioLinks(scenario_edges, scenario_junctions, 'AM', config, False, False)
-    model_links = test.full_network
-    model_nodes = test.junctions
     
-    
+    for time_period in config['time_periods']:
+        dir = os.path.join('outputs', time_period)
+        try:
+            os.makedirs(dir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        test = BuildHOVSystem(scenario_edges, scenario_junctions, time_period, config)
+        tod_edges = pd.concat([scenario_edges, pd.DataFrame(test.hov_weave_edges)])
+        tod_edges = pd.concat([tod_edges, pd.DataFrame(test.hov_edges)],)
+        # need to reset so we dont have duplicate index values
+        tod_edges.reset_index(inplace = True)
 
+        tod_junctions =  pd.concat([scenario_junctions, test.hov_junctions])
+        tod_junctions.reset_index(inplace = True)
 
-    #test = CreateTransitSegmentTable(scenario_edges, gdf_TransitLines, gdf_TransitPoints, 'AM', config)
-    #print 'done'
-    
-    # Do Trasit Stuff here
-    gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctI + 4000
-    model_links['weight'] = np.where(model_links['FacilityTy'] == 99, .5 * model_links.length, model_links.length)
-     
-    # just do AM for now:
-    route_id_list = gdf_TransitLines.loc[gdf_TransitLines.Headway_AM > 0].LineID.tolist()
-    logger.info("Start tracing %s routes", len(route_id_list))
+        test = BuildScenarioLinks(tod_edges, tod_junctions, time_period, config, config['reversibles'][time_period][0],config['reversibles'][time_period][1])
+        model_links = test.full_network
+        model_nodes = test.junctions
   
-    # when tracing, only use edges that support transit
-    transit_edges = model_links.loc[(model_links.i > config['max_zone_number']) & (model_links.j > config['max_zone_number'])].copy()  
-    transit_edges = transit_edges.loc[transit_edges['modes'] <> 'wk']
+        # Do Trasit Stuff here
+        gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctI + config['node_offset']
+        model_links['weight'] = np.where(model_links['FacilityTy'] == 99, .5 * model_links.length, model_links.length)
+     
+        # just do AM for now:
+        route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
+        if route_id_list:
+            logger.info("Start tracing %s routes", len(route_id_list))
+  
+            # when tracing, only use edges that support transit
+            transit_edges = model_links.loc[(model_links.i > config['max_zone_number']) & (model_links.j > config['max_zone_number'])].copy()  
+            transit_edges = transit_edges.loc[transit_edges['modes'] <> 'wk']
     
-    pool = mp.Pool(12, build_transit_segments_parallel.init_pool, [transit_edges, gdf_TransitLines, gdf_TransitPoints])
-    results = pool.map(build_transit_segments_parallel.trace_transit_route, route_id_list)
+            pool = mp.Pool(12, build_transit_segments_parallel.init_pool, [transit_edges, gdf_TransitLines, gdf_TransitPoints])
+            results = pool.map(build_transit_segments_parallel.trace_transit_route, route_id_list)
 
-    results = [item for sublist in results for item in sublist]
-    pool.close()
+            results = [item for sublist in results for item in sublist]
+            pool.close()
 
-
-   
-    transit_segments = pd.DataFrame(results)
-    test = ConfigureTransitSegments(transit_segments, gdf_TransitLines, model_links, config)
-    transit_segments = test.configure()
-
-    
-    #transit_segments = transit_segments.merge(model_links[['i', 'j', 'length']], how = 'left', left_on = ['INode', 'JNode'], right_on = ['i', 'j'])
-    #transit_segments['stop_to_stop_distance'] = transit_segments.groupby(['route_id', 'stop_number'])['length'].transform('sum')
-
-    transit_segments.to_csv('d:/test_transit_segments.csv')
-
-    model_nodes.to_file('d:/test_junctions.shp', schema = {'geometry': 'Point','properties': {'is_zone': 'int', 'i' : 'int'}})
-    link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str',  
-                                                                                   'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 'ul2' : 'int', 
-                                                                                   'ul3' : 'int', 'PSRCEdgeID' : 'int', 'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str'})
-    link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
-    model_links.to_file('d:/test_network.shp', schema = link_schema)
+            transit_segments = pd.DataFrame(results)
+            test = ConfigureTransitSegments(time_period, transit_segments, gdf_TransitLines, model_links, config)
+            transit_segments = test.configure()
+            
+            transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
+        
+        model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), schema = {'geometry': 'Point','properties': {'is_zone': 'int', 'i' : 'int'}})
+        link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str',  
+                                                                                   'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
+                                                                                   'ul2' : 'int', 'ul3' : 'int', 'PSRCEdgeID' : 'int', 
+                                                                                   'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str'})
+        link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
+        model_links.to_file(os.path.join(dir, time_period + '_edges.shp'), schema = link_schema)
 
 
 
-    #scenario_junctions.to_file('d:/scenario_junctions1.shp')
-    #scenario_edges.to_file('d:/scenario_edges1.shp')
+        #scenario_junctions.to_file('d:/scenario_junctions1.shp')
+        #scenario_edges.to_file('d:/scenario_edges1.shp')
 
 
-    #scenario_edges.to_file(r'R:\Stefan\GDB_data\ScenarioEdges3.shp')
+        #scenario_edges.to_file(r'R:\Stefan\GDB_data\ScenarioEdges3.shp')
 
     end_time = datetime.datetime.now()
     elapsed_total = end_time - start_time
