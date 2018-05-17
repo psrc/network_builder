@@ -5,7 +5,7 @@ import log_controller
 import networkx as nx
 from networkx.algorithms.components import *
 import copy
-from boltons import dictutils
+#from boltons import dictutils
 import numpy as np
 
 class ThinNetwork(object):

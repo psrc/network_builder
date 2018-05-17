@@ -106,3 +106,10 @@ project_buffer_dist : 1
 
 # How far to shift HOV lanes from gP lanes:
 hov_shift_dist : 1.906090351
+
+save_network_files : False  
+create_emme_network: True
+emme_folder_name: EMME
+emmebank_title : networks
+modes_file: modes.txt
+transit_vehicle_file: vehicles.txt

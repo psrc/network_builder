@@ -74,6 +74,7 @@ class BuildScenarioLinks(object):
         network.j = network.j.astype(int)
         network['id'] = network.i.astype(str) + '-' + network.j.astype(str)
         network.set_index(network.id, inplace = True)
+        network = self._validate_network(network)
         return network
 
     def _update_hov_oneway(self, network):
@@ -214,3 +215,13 @@ class BuildScenarioLinks(object):
         edges.i = edges.NewINode
         edges.j = edges.NewJNode
         return edges
+
+    def _validate_network(self, edges):
+        if len(edges[edges['type'] == 0]) > 0:
+            self._logger.warning('Warning: Field LinkType in TransRefEdges containes 0s. Recoding to 90.')
+            edges['type'] = np.where(edges['type'] == 0, 90, edges['type'])
+        # fix this
+        edges['type'] = np.where(edges['type'] > 90, 90, edges['type'])
+        return edges
+        
+
