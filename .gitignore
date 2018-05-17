@@ -1,0 +1,11 @@
+outputs/
+*.pyc
+*.tsv
+*.tex
+*.alo
+*.Rhistory
+*.dll
+*.exe
+*.in
+*.ens
+*.pyproj
