@@ -69,7 +69,7 @@ class BuildScenarioLinks(object):
         weave_links = self._configure_weave_link_attributes(weave_links, self.config['weave_links'])
         network.update(weave_links)
 
-        network = network[self.config['emme_link_columns'] + ['geometry', 'PSRCEdgeID', 'FacilityTy']]
+        network = network[self.config['emme_link_columns'] + self.config['additional_keep_columns']]
         network.i = network.i.astype(int)
         network.j = network.j.astype(int)
         network['id'] = network.i.astype(str) + '-' + network.j.astype(str)

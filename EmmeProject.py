@@ -32,11 +32,13 @@ sys.path.append(os.getcwd())
 
 class EmmeProject:
     def __init__(self, filepath):
+        self.app = app
         self.desktop = app.start_dedicated(True, "SEC", filepath)
         self.m = _m.Modeller(self.desktop)
+        self.data_explorer = self.desktop.data_explorer()
         for t in self.m.toolboxes:
             t.connection.execute("PRAGMA busy_timeout=1000")
-
+        self.data_base = self.data_explorer.active_database()
         #delete locki:
         self.m.emmebank.dispose()
         pathlist = filepath.split("/")
@@ -45,9 +47,9 @@ class EmmeProject:
         self.dir = "/".join(pathlist) + "/"
         self.bank = self.m.emmebank
         self.tod = self.bank.title
-        #self.current_scenario = self.bank.scenario(list(self.bank.scenarios())[0])
-
         self.data_explorer = self.desktop.data_explorer()
+        self.primary_scenario = self.data_explorer.primary_scenario
+        
     #def network_counts_by_element(self, element):
     #    network = self.current_scenario.get_network()
     #    d = network.element_totals
@@ -118,9 +120,12 @@ class EmmeProject:
         process(transaction_file = linkshape_file,
             revert_on_error = True,
             scenario =scenario)
-    #def change_scenario(self, scenario_name):
-    #    self.bank.scena
-    #    self.current_scenario = scenario_name
+
+    def change_primary_scenario(self, scenario_name):
+        self.desktop.refresh_data()
+        scenario = [scenario for scenario in self.bank.scenarios() if scenario.title == scenario_name][0]
+        self.data_explorer.replace_primary_scenario(scenario)
+        self.primary_scenario = scenario
 
     def delete_matrix(self, matrix):
         NAMESPACE = "inro.emme.data.matrix.delete_matrix"
@@ -258,6 +263,28 @@ class EmmeProject:
         network_calc = self.m.tool(NAMESPACE)
         self.transit_segment_calc_result = network_calc(spec)
 
+    def export_base_network(self, file_name):
+        NAMESPACE=("inro.emme.data.network.base.export_base_network")
+        export_basenet = self.m.tool(NAMESPACE)
+        export_basenet(export_file = file_name,
+               field_separator = ",")
+
+    def export_turns(self, file_name):
+        NAMESPACE=("inro.emme.data.network.turn.export_turns")
+        export_turns = self.m.tool(NAMESPACE)
+        export_turns(export_file = file_name,
+               field_separator = ",")
+
+    def export_transit(self, file_name):
+        NAMESPACE=("inro.emme.data.network.transit.export_transit_lines")
+        export_transit = self.m.tool(NAMESPACE)
+        export_transit(export_file = file_name,
+               field_separator = ",")
+
+    def export_shape(self, file_name):
+        NAMESPACE=("inro.emme.data.network.base.export_link_shape")
+        export_shape = self.m.tool(NAMESPACE)
+        export_shape(export_file = file_name)
 
 def json_to_dictionary(dict_name):
 

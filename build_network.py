@@ -1,17 +1,17 @@
 import time
 import geopandas as gpd
 import pandas as pd
-import os, sys, errno
+import os
+import sys
+import errno
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
-#import data_sources
 import yaml
 from FlagNetworkFromProjects import *
 from ThinNetwork import *
 from BuildHOVSystem import *
 from BuildScenarioLinks import *
-from CreateTransitSegmentTable import *
 from ConfigureTransitSegments import *
 from EmmeProject import *
 from EmmeNetwork import *
@@ -21,7 +21,7 @@ import datetime
 import networkx as nx
 from networkx.algorithms.components import *
 import collections
-import multiprocessing as mp 
+import multiprocessing as mp
 import build_transit_segments_parallel
 import collections
 import inro.emme.database.emmebank as _eb
@@ -29,24 +29,26 @@ import inro.emme.desktop.app as app
 import json
 import shutil
 from shutil import copy2 as shcopy
-#from multiprocessing import Pool 
 
 
-def edges_from_turns(turns):
-    edge_list = turns.FrEdgeID.tolist()
-    edge_list =  edge_list + gdf_TurnMovements.ToEdgeID.tolist()
-    return edge_list
+def nodes_from_turns(turns, edges):
+    edge_list = turns.FrEdgeID.tolist() + turns.ToEdgeID.tolist()
+    edges = edges[edges.PSRCEdgeID.isin(edge_list)]
+    return list(set(edges.INode.tolist() + edges.JNode.tolist()))
 
 def nodes_from_transit(transit_points):
     return list(set(transit_points.PSRCJunctI.tolist()))
+
 
 def nodes_from_centroids(junctions):
     centroid_junctions = junctions[junctions.EMME2nodeI > 0]
     return centroid_junctions.PSRCjunctI.tolist()
 
+
 def retain_junctions(junctions):
     retain_junctions = junctions[junctions.JunctionTy == 10]
     return retain_junctions.PSRCjunctI.tolist()
+
 
 def nodes_from_edges(list_of_edges, edges):
     edges = edges[edges.PSRCEdgeID.isin(list_of_edges)]
@@ -55,60 +57,62 @@ def nodes_from_edges(list_of_edges, edges):
     node_list = node_list + edges.JNode.tolist()
     return list(set(node_list))
 
+
 def get_potential_thin_nodes(edges):
     node_list = edges.INode.tolist() + edges.JNode.tolist()
     df = pd.DataFrame(pd.Series(node_list).value_counts(), columns=['node_count'])
     df = df[df.node_count == 2]
     return df.index.tolist()
 
+def nodes_to_retain(edges):
+    turn_nodes = nodes_from_turns(gdf_TurnMovements, edges)
+    centroids = nodes_from_centroids(gdf_Junctions)
+    transit_nodes = nodes_from_transit(gdf_TransitPoints)
+    junctions = retain_junctions(gdf_Junctions)
+    return turn_nodes + centroids + transit_nodes + junctions
+    
+
 
 
 if __name__ == '__main__':
     config = yaml.safe_load(open("config.yaml"))
-    #start = time.time()
 
     logger = log_controller.setup_custom_logger('main_logger')
     logger.info('------------------------Network Builder Started----------------------------------------------')
+    
     start_time = datetime.datetime.now()
 
-    logger.info(" %s starting data import", datetime.datetime.today().replace(microsecond=0))
+    logger.info('Starting data import')
     from data_sources import *
-    logger.info(" %s finished data import", datetime.datetime.today().replace(microsecond=0))
+    logger.info('Finished data import')
 
     model_year = config['model_year']
 
-    logger.info(" %s starting updated network from projects", datetime.datetime.today().replace(microsecond=0))
-    #test = FlagNetworkFromProjects(gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config)
-    #scenario_edges = test.scenario_edges
-    logger.info(" %s finished updating network from projects", datetime.datetime.today().replace(microsecond=0))
-
     scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
                                       & (gdf_TransRefEdges.ActiveLink > 0) 
-                                      & (gdf_TransRefEdges.ActiveLink <> 999))].copy()
+                                      & (gdf_TransRefEdges.ActiveLink <> 999))]
     scenario_edges['projRteID'] = 0
 
-    # Get nodes/edges that cannot be thinned
-    turn_edge_list = edges_from_turns(gdf_TurnMovements)
-    no_thin_node_list = nodes_from_edges(turn_edge_list, scenario_edges)
+    if config['update_network_from_projects']:
+        logger.info('Starting updated network from projects')
+        flagged_network = FlagNetworkFromProjects(gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config)
+        scenario_edges = flagged_network.scenario_edges
+        logger.info('Finished updating network from projects')
 
-    centroids = nodes_from_centroids(gdf_Junctions)
-    retain_junctions = retain_junctions(gdf_Junctions)
-    no_thin_node_list = no_thin_node_list + centroids + retain_junctions
-
-
-    transit_node_list = nodes_from_transit(gdf_TransitPoints)
-    no_thin_node_list = list(set(no_thin_node_list + transit_node_list))
-
-    # Get potential nodes to be thinned:
+    
+    logger.info('Starting network thinning')
+    start_edge_count = len(scenario_edges)
+    retain_nodes = nodes_to_retain(scenario_edges)
     potential_thin_nodes = get_potential_thin_nodes(scenario_edges)
-    potential_thin_nodes = [x for x in potential_thin_nodes if x not in no_thin_node_list]
-
+    potential_thin_nodes = [x for x in potential_thin_nodes if x not in retain_nodes]
     logger.info(" %s Potential nodes to thin", len(potential_thin_nodes))
-
-    test = ThinNetwork(scenario_edges, gdf_Junctions, potential_thin_nodes, config)
-    scenario_edges = test.thinned_network_gdf
-    scenario_junctions = test.thinned_junctions_gdf
-
+    thinned_network = ThinNetwork(scenario_edges, gdf_Junctions, potential_thin_nodes, config)
+    scenario_edges = thinned_network.thinned_edges_gdf
+    scenario_junctions = thinned_network.thinned_junctions_gdf
+    final_edge_count = len(scenario_edges)
+    logger.info("Network went from %s edges to %s." % (start_edge_count, final_edge_count))
+    logger.info("Finished thinning network")
+    
     #turns:
     turn_list = []
     for turn in gdf_TurnMovements.iterrows():
@@ -160,8 +164,17 @@ if __name__ == '__main__':
         my_project = EmmeProject(emme_folder + '\\emme_networks' + '\\emme_networks.emp')
         os.path.join(emme_folder + 'emme_networks')
         
+        build_file_folder = os.path.join('outputs', config['emme_folder_name'], 'build_files')
+        if os.path.exists(build_file_folder):
+            shutil.rmtree(build_file_folder)
+        os.makedirs(build_file_folder)
+        os.makedirs(os.path.join(build_file_folder, 'roadway'))
+        os.makedirs(os.path.join(build_file_folder, 'transit'))
+        os.makedirs(os.path.join(build_file_folder, 'turns'))
+        os.makedirs(os.path.join(build_file_folder, 'shape'))
+
         for time_period in config['time_periods']:
-            dir = os.path.join('outputs', time_period)
+            dir = os.path.join('outputs', 'shapefiles', time_period)
             try:
                 os.makedirs(dir)
             except OSError as e:
@@ -211,7 +224,7 @@ if __name__ == '__main__':
                 link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str',  
                                                                                    'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
                                                                                    'ul2' : 'int', 'ul3' : 'int', 'PSRCEdgeID' : 'int', 
-                                                                                   'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str'})
+                                                                                   'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str', 'Processing_x' : 'int'})
                 link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
                 model_links.to_file(os.path.join(dir, time_period + '_edges.shp'), schema = link_schema)
 
@@ -221,15 +234,26 @@ if __name__ == '__main__':
                 else:
                     emme_network = EmmeNetwork(my_project, time_period, gdf_TransitLines, model_links, model_nodes, turn_df, config)
                 emme_network.load_network()
+                
+
+            if config['export_build_files']:
+                my_project.change_primary_scenario(time_period)
+                
+                path = os.path.join(build_file_folder, 'roadway', time_period.lower() + '_roadway.in')
+                my_project.export_base_network(path)
+
+                if route_id_list:
+                    path = os.path.join(build_file_folder, 'transit', time_period.lower() + '_transit.in')
+                    my_project.export_transit(path)
+                
+                path = os.path.join(build_file_folder, 'turns', time_period.lower() + '_turns.in')
+                my_project.export_turns(path)
+
+               # path = os.path.join(build_file_folder, 'shape', time_period.lower() + '_shape.in')
+               # my_project.export_shape(path)
 
 
 
-
-        #scenario_junctions.to_file('d:/scenario_junctions1.shp')
-        #scenario_edges.to_file('d:/scenario_edges1.shp')
-
-
-        #scenario_edges.to_file(r'R:\Stefan\GDB_data\ScenarioEdges3.shp')
 
     end_time = datetime.datetime.now()
     elapsed_total = end_time - start_time

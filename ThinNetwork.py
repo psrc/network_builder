@@ -5,7 +5,6 @@ import log_controller
 import networkx as nx
 from networkx.algorithms.components import *
 import copy
-#from boltons import dictutils
 import numpy as np
 
 class ThinNetwork(object):
@@ -15,15 +14,13 @@ class ThinNetwork(object):
         self.thin_nodes_list = thin_nodes_list
         self.config = config
         self._logger = log_controller.logging.getLogger('main_logger')
-        self.thinned_network_gdf = self._thin_network()
+        self.thinned_edges_gdf = self._thin_network()
         self.thinned_junctions_gdf = self._thin_junctions()
     
     def _get_sub_net(self):
             return self.network_gdf[self.network_gdf.IJ.isin (self.thin_nodes_list) | self.network_gdf.IJ.isin (self.thin_nodes_list)]
 
     def _compare_attributes(self, edge1, edge2, edge2_dir= 'IJ'):
-        #self.config['non_dir_columns'] = ['FacilityTy', 'projRouteID', 'Modes', 'Oneway', 'CountID', 'CountyID'] 
-        #ij_cols = [x for x in self.network_gdf if x[0:2] == "IJ" or x[0:2] == "JI" ]
         compare_cols = self.config['non_dir_columns'] + self.config['dir_columns']
         compare_atts1 = {key: value for (key, value) in edge1.iteritems() if key in compare_cols}
         
@@ -44,7 +41,6 @@ class ThinNetwork(object):
             return False
 
     def _thin_network(self):
-        #ij_cols = [x for x in self.network_gdf if x[0:2] == "IJ" or x[0:2] == "JI" ]
         cols = self.config['network_thin_columns'] + self.config['dir_columns']
         G = nx.from_pandas_edgelist(self.network_gdf, 'INode', 'JNode', cols)
         i = 0
@@ -132,22 +128,20 @@ class ThinNetwork(object):
         for x in G.edges.iteritems():
             edge_list.append(x[1])
         thinned_net = gpd.GeoDataFrame(edge_list)
-        #thinned_net['NewINode'] = thinned_net['INode'] + self.config['node_offset'] 
-        #thinned_net['NewJNode'] = thinned_net['JNode'] + self.config['node_offset']
         return thinned_net
 
     def _thin_junctions(self):
-        keep_nodes = list(set(self.thinned_network_gdf['INode'].tolist() + self.thinned_network_gdf['JNode'].tolist()))
+        keep_nodes = list(set(self.thinned_edges_gdf['INode'].tolist() + self.thinned_edges_gdf['JNode'].tolist()))
         thinned_junctions = self.junctions_gdf[self.junctions_gdf['PSRCjunctI'].isin(keep_nodes)]
         thinned_junctions['ScenarioNodeID'] = thinned_junctions['PSRCjunctI'] + self.config['node_offset']
         thinned_junctions['ScenarioNodeID'] = np.where(thinned_junctions['EMME2nodeI'] > 0, thinned_junctions['EMME2nodeI'], thinned_junctions['ScenarioNodeID'])
         # now make a map of old to new
         recode_dict = pd.Series(thinned_junctions.ScenarioNodeID.values, thinned_junctions.PSRCjunctI.values).to_dict()
         #recode_edges
-        self.thinned_network_gdf['NewINode'] = self.thinned_network_gdf['INode']
-        self.thinned_network_gdf['NewJNode'] = self.thinned_network_gdf['JNode']
-        self.thinned_network_gdf['NewINode'].replace(recode_dict, inplace=True)
-        self.thinned_network_gdf['NewJNode'].replace(recode_dict, inplace=True)
+        self.thinned_edges_gdf['NewINode'] = self.thinned_edges_gdf['INode']
+        self.thinned_edges_gdf['NewJNode'] = self.thinned_edges_gdf['JNode']
+        self.thinned_edges_gdf['NewINode'].replace(recode_dict, inplace=True)
+        self.thinned_edges_gdf['NewJNode'].replace(recode_dict, inplace=True)
         return thinned_junctions
 
     def _check_edge_connection_validity(self, node, edges, network_graph):
@@ -174,14 +168,3 @@ class ThinNetwork(object):
                     return None
                 else:
                     return (edge_1, edge_2)
-                                
-    def _thin_network2(self):
-        g = nx.from_pandas_edgelist(self.network_gdf, 'INode', 'JNode', ['PSRCEdgeID'])
-        f = nx.Graph()                                                                                                                                     
-        fedges = filter(lambda x: g.degree()[x[0]] == 2 and g.degree()[x[1]]==2, G.edges)
-        # get rid of any edge that has a node that should not be thinned
-        fedges = [x for x in fedges if (x[0] not in no_thin_node_list) and (x[1] not in no_thin_node_list)] 
-        f.add_edges_from(fedges)
-        connected = connected_components(f)
-        for segments in connected:
-            df = self.network_gdf[(self.network_gdf.INode == node) | (self.network_gdf.JNode == node)].copy()  

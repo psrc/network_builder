@@ -8,6 +8,8 @@ max_zone_number: 4000
 
 node_offset: 4000
 
+update_network_from_projects : False
+
 time_periods: ['AM', 'MD', 'PM', 'EV', 'NI']
 
 reversibles:
@@ -26,16 +28,21 @@ dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLan
 'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK']
 
 # Non-Directional attributes used for networkt thnning.
-non_dir_columns : ['FacilityTy', 'NewFacilit', 'LinkType', 'projRouteID', 'Modes', 'Oneway', 'CountID', 'CountyID']
+non_dir_columns : ['FacilityTy', 'NewFacilit', 'LinkType', 'projRouteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
 project_update_columns : ['projRteID', 'Change_Typ']
 
-network_thin_columns : ['PSRCEdgeID', 'FacilityTy', 'NewFacilit', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID']
+network_thin_columns : ['PSRCEdgeID', 'FacilityTy', 'NewFacilit', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID', 'Processing_x']
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3']
 
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityTy', 'Processing_x']
+
 emme_node_columns : ['is_zone', 'i']
+
+# links with these modes use time, not speed limit. 
+link_time_modes : ['f', 'rc']
 
 walk_links:
   direction: 1
@@ -107,8 +114,9 @@ project_buffer_dist : 1
 # How far to shift HOV lanes from gP lanes:
 hov_shift_dist : 1.906090351
 
-save_network_files : False  
+save_network_files : True  
 create_emme_network: True
+export_build_files: True
 emme_folder_name: EMME
 emmebank_title : networks
 modes_file: modes.txt

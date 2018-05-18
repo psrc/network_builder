@@ -9,3 +9,4 @@ outputs/
 *.in
 *.ens
 *.pyproj
+*.sln
