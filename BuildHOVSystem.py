@@ -35,7 +35,7 @@ class BuildHOVSystem(object):
         # update the the geometry column
         hov_edges.update(shift_edges_geom)
         #hov_edges = _update_hov_ij_nodes(self, hov_edges)
-        hov_edges['FacilityTy'] = 99
+        hov_edges['FacilityTy'] = 999
         return hov_edges
 
     def _get_hov_junctions(self):

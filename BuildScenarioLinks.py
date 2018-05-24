@@ -48,9 +48,12 @@ class BuildScenarioLinks(object):
         network.reset_index(inplace=True)
 
         # configure HOV attributes
-        hov_edges = network[network['FacilityTy'] == 99]
+        hov_edges = network[network['FacilityTy'] == 999]
         hov_edges = self._configure_hov_attributes(hov_edges)
         network.update(hov_edges)
+
+        # configure ferry, rail
+        network = self._configure_transit_links(network)
         
         # reverse reversibles?
         if self.reversible_switch_dir:
@@ -74,12 +77,14 @@ class BuildScenarioLinks(object):
         network.j = network.j.astype(int)
         network['id'] = network.i.astype(str) + '-' + network.j.astype(str)
         network.set_index(network.id, inplace = True)
+       
         network = self._validate_network(network)
+        
         return network
 
     def _update_hov_oneway(self, network):
         # A two way GP lane does not always have two way GP
-        hov_edges = network[network['FacilityTy'] == 99]
+        hov_edges = network[network['FacilityTy'] == 999]
         # One way IJ HOV:
         hov_edges['Oneway'] = np.where((hov_edges['Oneway']==2) & (hov_edges['IJLanesHOV' + self.time_period] > 0) & (hov_edges['JILanesHOV' + self.time_period] == 0), 0, hov_edges['Oneway'])
         # One way JI HOV
@@ -216,12 +221,27 @@ class BuildScenarioLinks(object):
         edges.j = edges.NewJNode
         return edges
 
+    def _configure_transit_links(self, edges):
+        edges.ul2 = edges.ul2.astype(float)
+        edges.ul2 = np.where(edges['Modes'].isin(self.config['link_time_modes']), edges.Processing_x/1000.0, edges.ul2)
+        return edges
+
     def _validate_network(self, edges):
         if len(edges[edges['type'] == 0]) > 0:
             self._logger.warning('Warning: Field LinkType in TransRefEdges containes 0s. Recoding to 90.')
             edges['type'] = np.where(edges['type'] == 0, 90, edges['type'])
         # fix this
         edges['type'] = np.where(edges['type'] > 90, 90, edges['type'])
+
+        loops = edges[edges['i'] == edges['j']].PSRCEdgeID.tolist()
+        if loops:
+            for edge_id in loops:
+                self._logger.warning('Warning: Edge %s has the same i and j node.' % (edge_id))
+
+        empty_mode = edges[edges['modes'] == ' '].PSRCEdgeID.tolist()
+        if empty_mode:
+            for edge_id in empty_mode:
+                self._logger.warning('Warning: Edge %s mode field is blank. Please fix!' % (edge_id))
         return edges
         
 

@@ -62,10 +62,10 @@ class EmmeNetwork(object):
             emme_link.num_lanes = int(link.lanes)
             emme_link.volume_delay_func = int(link.vdf)
             emme_link.data1 = int(link.ul1)
-            if link.modes in self.config['link_time_modes']:
-                emme_link.data2 = link.Processing_x/1000.0
-            else:
-                emme_link.data2 = int(link.ul2)
+            #if link.modes in self.config['link_time_modes']:
+            #    emme_link.data2 = link.Processing_x/1000.0
+            #else:
+            emme_link.data2 = round(link.ul2, 2)
             emme_link.data3 = int(link.ul3)
             emme_link.vertices = vertices = list(link.geometry.coords)[1:-1]
 

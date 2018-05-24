@@ -34,13 +34,13 @@ gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(gdf_TransitL
 
 
 ### Projects
-#gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes_2017.shp'))
+gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
 
 ### tblLineProjects
-#df_tblLineProjects = pd.read_csv(os.path.join(data_path, 'tblLineProjects_2017.csv'))
-#df_tblLineProjects = df_tblLineProjects[df_tblLineProjects.projRteID.isin(gdf_ProjectRoutes.projRteID)]
+df_tblLineProjects = pd.read_csv(os.path.join(data_path, 'tblLineProjects.csv'))
+df_tblLineProjects = df_tblLineProjects[df_tblLineProjects.projRteID.isin(gdf_ProjectRoutes.projRteID)]
 
-#gdf_ProjectRoutes = gdf_ProjectRoutes.merge(df_tblLineProjects, how = 'left', on = 'projRteID')
+gdf_ProjectRoutes = gdf_ProjectRoutes.merge(df_tblLineProjects, how = 'left', on = 'projRteID')
 
 ##gdf_ProjectRoutes = gdf_ProjectRoutes[gdf_ProjectRoutes.projRteID.isin(project_list)]
 

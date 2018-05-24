@@ -91,7 +91,7 @@ if __name__ == '__main__':
     scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
                                       & (gdf_TransRefEdges.ActiveLink > 0) 
                                       & (gdf_TransRefEdges.ActiveLink <> 999))]
-    scenario_edges['projRteID'] = 0
+    #scenario_edges['projRteID'] = 0
 
     if config['update_network_from_projects']:
         logger.info('Starting updated network from projects')
@@ -99,6 +99,9 @@ if __name__ == '__main__':
         scenario_edges = flagged_network.scenario_edges
         logger.info('Finished updating network from projects')
 
+    #scenario_edges = scenario_edges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
+    #                                  & (scenario_edges.ActiveLink > 0) 
+    #                                  & (scenario_edges.ActiveLink <> 999)) | scenario_edges['projRteID'] > 0]
     
     logger.info('Starting network thinning')
     start_edge_count = len(scenario_edges)
@@ -195,7 +198,7 @@ if __name__ == '__main__':
   
             # Do Trasit Stuff here
             gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctI + config['node_offset']
-            model_links['weight'] = np.where(model_links['FacilityTy'] == 99, .5 * model_links.length, model_links.length)
+            model_links['weight'] = np.where(model_links['FacilityTy'] == 999, .5 * model_links.length, model_links.length)
      
             # just do AM for now:
             route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
@@ -223,8 +226,9 @@ if __name__ == '__main__':
                 model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), schema = {'geometry': 'Point','properties': {'is_zone': 'int', 'i' : 'int'}})
                 link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str',  
                                                                                    'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
-                                                                                   'ul2' : 'int', 'ul3' : 'int', 'PSRCEdgeID' : 'int', 
-                                                                                   'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str', 'Processing_x' : 'int'})
+                                                                                   'ul2' : 'float', 'ul3' : 'int', 'PSRCEdgeID' : 'int', 
+                                                                                   'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str', 
+                                                                                   'Processing_x' : 'int', 'projRteID' : 'int'})
                 link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
                 model_links.to_file(os.path.join(dir, time_period + '_edges.shp'), schema = link_schema)
 
