@@ -44,7 +44,6 @@ def nodes_from_centroids(junctions):
     centroid_junctions = junctions[junctions.EMME2nodeI > 0]
     return centroid_junctions.PSRCjunctI.tolist()
 
-
 def retain_junctions(junctions):
     retain_junctions = junctions[junctions.JunctionTy == 10]
     return retain_junctions.PSRCjunctI.tolist()
@@ -56,7 +55,6 @@ def nodes_from_edges(list_of_edges, edges):
     print len(node_list)
     node_list = node_list + edges.JNode.tolist()
     return list(set(node_list))
-
 
 def get_potential_thin_nodes(edges):
     node_list = edges.INode.tolist() + edges.JNode.tolist()
@@ -94,7 +92,7 @@ if __name__ == '__main__':
     #scenario_edges['projRteID'] = 0
 
     if config['update_network_from_projects']:
-        logger.info('Starting updated network from projects')
+        logger.info('Start updating network from projects')
         flagged_network = FlagNetworkFromProjects(gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config)
         scenario_edges = flagged_network.scenario_edges
         logger.info('Finished updating network from projects')
@@ -103,7 +101,7 @@ if __name__ == '__main__':
     #                                  & (scenario_edges.ActiveLink > 0) 
     #                                  & (scenario_edges.ActiveLink <> 999)) | scenario_edges['projRteID'] > 0]
     
-    logger.info('Starting network thinning')
+    logger.info('Start network thinning')
     start_edge_count = len(scenario_edges)
     retain_nodes = nodes_to_retain(scenario_edges)
     potential_thin_nodes = get_potential_thin_nodes(scenario_edges)
@@ -200,7 +198,6 @@ if __name__ == '__main__':
             gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctI + config['node_offset']
             model_links['weight'] = np.where(model_links['FacilityTy'] == 999, .5 * model_links.length, model_links.length)
      
-            # just do AM for now:
             route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
             if route_id_list:
                 logger.info("Start tracing %s routes", len(route_id_list))

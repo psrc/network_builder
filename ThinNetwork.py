@@ -41,7 +41,7 @@ class ThinNetwork(object):
             return False
 
     def _thin_network(self):
-        cols = self.config['network_thin_columns'] + self.config['dir_columns']
+        cols = self.config['intermediate_keep_columns'] + self.config['dir_columns']
         G = nx.from_pandas_edgelist(self.network_gdf, 'INode', 'JNode', cols)
         i = 0
         for node in self.thin_nodes_list:

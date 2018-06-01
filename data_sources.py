@@ -32,9 +32,10 @@ gdf_TransitPoints = gpd.read_file(os.path.join(data_path, 'TransitPoints.shp'))
 gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(gdf_TransitLines.LineID)]
 
 
-
 ### Projects
 gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
+gdf_ProjectRoutes['FacilityTy'] = gdf_ProjectRoutes['Change_Typ']
+
 
 ### tblLineProjects
 df_tblLineProjects = pd.read_csv(os.path.join(data_path, 'tblLineProjects.csv'))

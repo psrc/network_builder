@@ -189,7 +189,8 @@ class FlagNetworkFromProjects(object):
 
                             if edge_dict in proj_edge_list:
 
-                                self._logger.info(
+                                if edge_dict['projRteID'] == route_id:
+                                    self._logger.info(
                                     'Edge %s already tagged by this project'
                                     ' %s check to see if digizited correctly.'
                                     % (edge_dict['PSRCEdgeID'], route_id))
@@ -218,9 +219,10 @@ class FlagNetworkFromProjects(object):
 
                             if edge_dict in proj_edge_list:
 
-                                self._logger.info(
+                                if edge_dict['projRteID'] == route_id:
+                                    self._logger.info(
                                     'Edge %s already tagged by this project'
-                                    ' %s, check to see if digizited correctly.'
+                                    ' %s check to see if digizited correctly.'
                                     % (edge_dict['PSRCEdgeID'], route_id))
 
                             elif edge_dict['PSRCEdgeID'] in update_edges:
@@ -276,7 +278,7 @@ class FlagNetworkFromProjects(object):
         by the projects attributes, where applicable. If an edge is
         digitized in the opposite direction of the project, then it's
         directional attrbutes are switched before updating. So all IJ
-        attributes become IJ and vise versa.
+        attributes become JI and vise versa.
        '''
 
         project_edges = self.flagged_edges.merge(
@@ -323,4 +325,8 @@ class FlagNetworkFromProjects(object):
         # Update scenario_edges with project attribues
         scenario_edges.update(merged_projects)
         scenario_edges.reset_index(inplace=True)
+        
+        # Delete edges flagged for removal
+        scenario_edges = scenario_edges.loc[scenario_edges['FacilityTy'] <> 99].copy()
+
         return scenario_edges
