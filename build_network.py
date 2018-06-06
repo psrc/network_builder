@@ -15,6 +15,7 @@ from BuildScenarioLinks import *
 from ConfigureTransitSegments import *
 from EmmeProject import *
 from EmmeNetwork import *
+from BuildZoneInputs import *
 import logging
 import log_controller
 import datetime
@@ -73,6 +74,8 @@ def nodes_to_retain(edges):
 
 
 if __name__ == '__main__':
+    pd.options.display.float_format = '{:.4f}'.format
+
     config = yaml.safe_load(open("config.yaml"))
 
     logger = log_controller.setup_custom_logger('main_logger')
@@ -89,13 +92,18 @@ if __name__ == '__main__':
     scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
                                       & (gdf_TransRefEdges.ActiveLink > 0) 
                                       & (gdf_TransRefEdges.ActiveLink <> 999))]
-    #scenario_edges['projRteID'] = 0
+    scenario_edges['projRteID'] = 0
 
     if config['update_network_from_projects']:
         logger.info('Start updating network from projects')
         flagged_network = FlagNetworkFromProjects(gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config)
         scenario_edges = flagged_network.scenario_edges
         logger.info('Finished updating network from projects')
+    else:
+         scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
+                                      & (gdf_TransRefEdges.ActiveLink > 0) 
+                                      & (gdf_TransRefEdges.ActiveLink <> 999))]
+         scenario_edges['projRteID'] = 0
 
     #scenario_edges = scenario_edges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
     #                                  & (scenario_edges.ActiveLink > 0) 
@@ -193,6 +201,17 @@ if __name__ == '__main__':
             test = BuildScenarioLinks(tod_edges, tod_junctions, time_period, config, config['reversibles'][time_period][0],config['reversibles'][time_period][1])
             model_links = test.full_network
             model_nodes = test.junctions
+
+            # Use AM network to create zone, park and ride files   
+            if time_period == 'AM':
+                zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
+                zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
+                path = os.path.join(build_file_folder, 'TAZIndex.txt')
+                zonal_inputs_tuple[0].to_csv(path, columns = ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External'], index = False, sep='\t')
+                path = os.path.join(build_file_folder, 'p_r_nodes.csv')
+                zonal_inputs_tuple[1].to_csv(path, columns = ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost'], index = False) 
+
+                                 
   
             # Do Trasit Stuff here
             gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctI + config['node_offset']
@@ -220,7 +239,7 @@ if __name__ == '__main__':
                     transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
         
             if config['save_network_files'] :
-                model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), schema = {'geometry': 'Point','properties': {'is_zone': 'int', 'i' : 'int'}})
+                model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), schema = {'geometry': 'Point','properties': {'is_zone': 'int', 'i' : 'int', 'P_RStalls' : 'int', 'PSRCjunctI' : 'int', 'Processing' : 'int'}})
                 link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str',  
                                                                                    'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
                                                                                    'ul2' : 'float', 'ul3' : 'int', 'PSRCEdgeID' : 'int', 

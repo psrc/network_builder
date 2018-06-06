@@ -8,6 +8,8 @@ max_zone_number: 4000
 
 node_offset: 4000
 
+max_regular_zone: 3700
+
 update_network_from_projects : True
 
 time_periods: ['AM', 'MD', 'PM', 'EV', 'NI']
@@ -39,7 +41,7 @@ emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 
 
 additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityTy', 'Processing_x', 'projRteID']
 
-emme_node_columns : ['is_zone', 'i']
+emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctI']
 
 # links with these modes use time, not speed limit. 
 link_time_modes : ['f', 'rc']

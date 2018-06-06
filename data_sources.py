@@ -41,7 +41,11 @@ gdf_ProjectRoutes['FacilityTy'] = gdf_ProjectRoutes['Change_Typ']
 df_tblLineProjects = pd.read_csv(os.path.join(data_path, 'tblLineProjects.csv'))
 df_tblLineProjects = df_tblLineProjects[df_tblLineProjects.projRteID.isin(gdf_ProjectRoutes.projRteID)]
 
+# Point Events (Projects that change capacity of a Park and Ride)
+df_evtPointProjectOutcomes = pd.read_csv(os.path.join(data_path, 'evtPointProjectOutcomes.csv'))
+
 gdf_ProjectRoutes = gdf_ProjectRoutes.merge(df_tblLineProjects, how = 'left', on = 'projRteID')
+gdf_ProjectRoutes = gdf_ProjectRoutes.loc[gdf_ProjectRoutes['InServiceDate'] <= config['model_year']]
 
 ##gdf_ProjectRoutes = gdf_ProjectRoutes[gdf_ProjectRoutes.projRteID.isin(project_list)]
 
