@@ -32,6 +32,7 @@ class ThinNetwork(object):
         if edge2_dir == 'IJ':
             compare_atts2 = {key: value for (key, value) in edge2.iteritems()
                              if key in compare_cols}
+
             if compare_atts1 == compare_atts2:
                 return True
             else:
@@ -39,11 +40,13 @@ class ThinNetwork(object):
 
         elif edge2_dir == 'JI':
             compare_atts2 = {key[1] + key[0] + key[2:]: value for
-                             (key, value) in edge2.i2teritems() if
+                             (key, value) in edge2.iteritems() if
                              key in self.config['dir_columns']}
+
             compare_atts2.update({key: value for (key, value) in
                                   edge2.iteritems() if key in
                                   self.config['non_dir_columns']})
+            
             if compare_atts1 == compare_atts2:
                 return True
             else:
@@ -108,9 +111,7 @@ class ThinNetwork(object):
                 a_test = [a_coords[0], a_coords[-1]]
                 b_test = [b_coords[0], b_coords[-1]]
 
-                if edge_1['INode'] != edge_2['INode'
-                                             ] != edge_1['JNode'
-                                                         ] != edge_2['JNode']:
+                if edge_1['INode'] != edge_2['INode'] and edge_1['JNode'] != edge_2['JNode']:
 
                     edge_dir = 'with'
                     merge = self._compare_attributes(edge_1, edge_2, 'IJ')
