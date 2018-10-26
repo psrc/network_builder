@@ -64,10 +64,10 @@ def get_potential_thin_nodes(edges):
     return df.index.tolist()
 
 def nodes_to_retain(edges):
-    turn_nodes = nodes_from_turns(gdf_TurnMovements, edges)
-    centroids = nodes_from_centroids(gdf_Junctions)
-    transit_nodes = nodes_from_transit(gdf_TransitPoints)
     junctions = retain_junctions(gdf_Junctions)
+    centroids = nodes_from_centroids(gdf_Junctions)
+    turn_nodes = nodes_from_turns(gdf_TurnMovements, edges)
+    transit_nodes = nodes_from_transit(gdf_TransitPoints)
     return turn_nodes + centroids + transit_nodes + junctions
     
 
@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
     scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
                                       & (gdf_TransRefEdges.ActiveLink > 0) 
-                                      & (gdf_TransRefEdges.ActiveLink <> 999))]
+                                      & (gdf_TransRefEdges.ActiveLink != 999))]
     scenario_edges['projRteID'] = 0
 
     if config['update_network_from_projects']:
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     else:
          scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
                                       & (gdf_TransRefEdges.ActiveLink > 0) 
-                                      & (gdf_TransRefEdges.ActiveLink <> 999))]
+                                      & (gdf_TransRefEdges.ActiveLink != 999))]
          scenario_edges['projRteID'] = 0
 
     #scenario_edges = scenario_edges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
@@ -213,7 +213,7 @@ if __name__ == '__main__':
 
                                  
   
-            # Do Trasit Stuff here
+            # Do Transit Stuff here
             gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctI + config['node_offset']
             model_links['weight'] = np.where(model_links['FacilityTy'] == 999, .5 * model_links.length, model_links.length)
      
@@ -225,15 +225,18 @@ if __name__ == '__main__':
                 transit_edges = model_links.loc[(model_links.i > config['max_zone_number']) & (model_links.j > config['max_zone_number'])].copy()  
                 transit_edges = transit_edges.loc[transit_edges['modes'] <> 'wk']
     
-                pool = mp.Pool(12, build_transit_segments_parallel.init_pool, [transit_edges, gdf_TransitLines, gdf_TransitPoints])
+                pool = mp.Pool(1, build_transit_segments_parallel.init_pool, [transit_edges, gdf_TransitLines, gdf_TransitPoints])
                 results = pool.map(build_transit_segments_parallel.trace_transit_route, route_id_list)
 
                 results = [item for sublist in results for item in sublist]
                 pool.close()
 
                 transit_segments = pd.DataFrame(results)
-                test = ConfigureTransitSegments(time_period, transit_segments, gdf_TransitLines, model_links, config)
-                transit_segments = test.configure()
+                if len(transit_segments) > 1:
+                    test = ConfigureTransitSegments(time_period, transit_segments, gdf_TransitLines, model_links, config)
+                    transit_segments = test.configure()
+                else:
+                    logger.warning("Warning: There are no transit segements to build transit routes!")
             
                 if config['save_network_files'] :
                     transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
@@ -244,7 +247,7 @@ if __name__ == '__main__':
                                                                                    'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
                                                                                    'ul2' : 'float', 'ul3' : 'int', 'PSRCEdgeID' : 'int', 
                                                                                    'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str', 
-                                                                                   'Processing_x' : 'int', 'projRteID' : 'int'})
+                                                                                   'Processing_x' : 'int', 'projRteID' : 'int', 'CountyID' : 'int', 'CountID' : 'int'})
                 link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
                 model_links.to_file(os.path.join(dir, time_period + '_edges.shp'), schema = link_schema)
 
