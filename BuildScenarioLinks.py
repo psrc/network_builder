@@ -143,7 +143,7 @@ class BuildScenarioLinks(object):
 
 
     def _create_reverse_walk_links(self, network):
-        reverse_walk_links = network[network.FacilityTy.isin(self.config['reverse_walk_link_facility_types'])]
+        reverse_walk_links = network[network.NewFacilit.isin(self.config['reverse_walk_link_facility_types'])]
         reverse_walk_links = reverse_walk_links[(reverse_walk_links['Oneway'] == 0) | (reverse_walk_links['Oneway'] == 1)]
         flipped_geom = reverse_walk_links.geometry.apply(self._flip_edges)
         reverse_walk_links.geometry.update(flipped_geom)
