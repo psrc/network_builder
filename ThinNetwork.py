@@ -92,12 +92,22 @@ class ThinNetwork(object):
         self._report_duplicate_edges()
         cols = self.config['intermediate_keep_columns'
                            ] + self.config['dir_columns']
-
-        G = nx.from_pandas_edgelist(self.network_gdf,
+        
+        # need to remove any links that are one-way, 
+        # but share the reverse node sequence
+        # these are merged back in after thinning. 
+        thin_edges = self.network_gdf.copy()
+        merge_edges = self.network_gdf.copy()[['INode', 'JNode']]
+        merge_edges = merge_edges.rename(columns = {'INode' : 'INode_y', 'JNode' : 'JNode_y'})
+        one_way_keep = thin_edges.merge(merge_edges, how = 'inner', left_on =  ['INode', 'JNode'], right_on = ['JNode_y', 'INode_y'])
+        thin_edges = thin_edges[~thin_edges['PSRCEdgeID'].isin(one_way_keep['PSRCEdgeID'].tolist())]
+        
+        G = nx.from_pandas_edgelist(thin_edges,
                                     'INode', 'JNode', cols)
 
         i = 0
-        for node in self.thin_nodes_list:
+        node_list = [x for x in self.thin_nodes_list if G.has_node(x)]
+        for node in node_list:
             if i % 1000 == 0:
                 print("%d Nodes Processed" % (i))
             edges = list(G.edges(node))
@@ -132,9 +142,16 @@ class ThinNetwork(object):
                             merged_row = edge_2
                             merged_row['geometry'] = line
                             merged_row['JNode'] = edge_1['JNode']
-                            G.remove_edge(edges[0][0], edges[0][1])
-                            G.remove_edge(edges[1][0], edges[1][1])
-                            G.add_edge(merged_row['INode'],
+                            if G.has_edge(merged_row['INode'], merged_row['JNode']):
+                                compare_edge = G.get_edge_data(merged_row['INode'],merged_row['JNode'])
+                                if list(compare_edge['geometry'].coords) == x:
+                                    print 'True'
+                                    G.remove_edge(edges[0][0], edges[0][1])
+                                    G.remove_edge(edges[1][0], edges[1][1])
+                            else:
+                                G.remove_edge(edges[0][0], edges[0][1])
+                                G.remove_edge(edges[1][0], edges[1][1])
+                                G.add_edge(merged_row['INode'],
                                        merged_row['JNode'], **merged_row)
 
                         else:
@@ -145,9 +162,17 @@ class ThinNetwork(object):
                             merged_row = edge_1
                             merged_row['geometry'] = line
                             merged_row['JNode'] = edge_2['JNode']
-                            G.remove_edge(edges[0][0], edges[0][1])
-                            G.remove_edge(edges[1][0], edges[1][1])
-                            G.add_edge(merged_row['INode'],
+                            if G.has_edge(merged_row['INode'], merged_row['JNode']):
+                                compare_edge = G.get_edge_data(
+                                    merged_row['INode'], merged_row['JNode'])
+                                if list(compare_edge['geometry'].coords) == x:
+                                    print 'True'
+                                    G.remove_edge(edges[0][0], edges[0][1])
+                                    G.remove_edge(edges[1][0], edges[1][1])
+                            else:
+                                G.remove_edge(edges[0][0], edges[0][1])
+                                G.remove_edge(edges[1][0], edges[1][1])
+                                G.add_edge(merged_row['INode'],
                                        merged_row['JNode'], **merged_row)
 
                     # Are lines digitized towards each other:
@@ -162,9 +187,17 @@ class ThinNetwork(object):
                         merged_row['geometry'] = line
                         merged_row['INode'] = edge_1['INode']
                         merged_row['JNode'] = edge_2['INode']
-                        G.remove_edge(edges[0][0], edges[0][1])
-                        G.remove_edge(edges[1][0], edges[1][1])
-                        G.add_edge(merged_row['INode'],
+                        if G.has_edge(merged_row['INode'], merged_row['JNode']):
+                            compare_edge = G.get_edge_data(
+                                    merged_row['INode'], merged_row['JNode'])
+                            if list(compare_edge['geometry'].coords) == x:
+                                print 'True'
+                                G.remove_edge(edges[0][0], edges[0][1])
+                                G.remove_edge(edges[1][0], edges[1][1])
+                        else:
+                            G.remove_edge(edges[0][0], edges[0][1])
+                            G.remove_edge(edges[1][0], edges[1][1])
+                            G.add_edge(merged_row['INode'],
                                    merged_row['JNode'], **merged_row)
 
                     # Lines must be digitized away from each other:
@@ -179,9 +212,16 @@ class ThinNetwork(object):
                         merged_row['geometry'] = line
                         merged_row['INode'] = edge_2['JNode']
                         merged_row['JNode'] = edge_1['JNode']
-                        G.remove_edge(edges[0][0], edges[0][1])
-                        G.remove_edge(edges[1][0], edges[1][1])
-                        G.add_edge(merged_row['INode'],
+                        if G.has_edge(merged_row['INode'], merged_row['JNode']):
+                            compare_edge = G.get_edge_data(
+                                    merged_row['INode'], merged_row['JNode'])
+                            if list(compare_edge['geometry'].coords) == x:
+                                G.remove_edge(edges[0][0], edges[0][1])
+                                G.remove_edge(edges[1][0], edges[1][1])
+                        else:
+                            G.remove_edge(edges[0][0], edges[0][1])
+                            G.remove_edge(edges[1][0], edges[1][1])
+                            G.add_edge(merged_row['INode'],
                                    merged_row['JNode'], **merged_row)
 
             i = i + 1
@@ -189,8 +229,10 @@ class ThinNetwork(object):
         edge_list = []
         for x in G.edges.iteritems():
             edge_list.append(x[1])
+        gdf =gpd.GeoDataFrame(edge_list)
+        gdf = gdf.append(one_way_keep[cols])
 
-        return(gpd.GeoDataFrame(edge_list))
+        return(gdf)
 
     def _thin_junctions(self):
         '''
@@ -238,10 +280,10 @@ class ThinNetwork(object):
 
         else:
             edge_1 = network_graph.get_edge_data(
-                edges[0][0], edges[0][1])
+                edges[0][0], edges[0][1]).copy()
 
             edge_2 = network_graph.get_edge_data(
-                edges[1][0], edges[1][1])
+                edges[1][0], edges[1][1]).copy()
 
             if edge_1['geometry'].type == 'MultiLineString':
                 self._logger.warning('WARNING: edge ' +
