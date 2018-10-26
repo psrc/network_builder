@@ -12,7 +12,7 @@ import json
 import log_controller
 
 class EmmeNetwork(object):
-    def __init__(self, emme_project, time_period, transit_lines, model_links, model_nodes, turns,  config, transit_segments = None):
+    def __init__(self, emme_project, time_period, transit_lines, model_links, model_nodes, turns, config, transit_segments = None):
         self.emme_project = emme_project
         self.time_period = time_period
         self.links = model_links
@@ -44,7 +44,14 @@ class EmmeNetwork(object):
         #('inputs/scenario/networks/' + self.config['transit_vehicle_file'] , self.emme_project.bank.scenario(scenario_id))
         self._load_network_elements(scenario)
 
+    def _create_extra_attributes(self, scenario):
+         for type, atts in self.config['extra_attributes'].iteritems():
+             for att in atts:
+                 att = '@' + att
+                 scenario.create_extra_attribute(type, att.lower())
+                          
     def _load_network_elements(self, scenario):
+        self._create_extra_attributes(scenario)
         network =  scenario.get_network()
         for node in self.nodes.iterrows():
             node = node[1]
@@ -60,6 +67,7 @@ class EmmeNetwork(object):
             emme_link = network.create_link(link.i, link.j, link.modes)
             emme_link.type = int(link.type)
             emme_link.num_lanes = int(link.lanes)
+            emme_link.length = link.length
             emme_link.volume_delay_func = int(link.vdf)
             emme_link.data1 = int(link.ul1)
             #if link.modes in self.config['link_time_modes']:
@@ -67,8 +75,12 @@ class EmmeNetwork(object):
             #else:
             emme_link.data2 = round(link.ul2, 2)
             emme_link.data3 = int(link.ul3)
-            emme_link.vertices = vertices = list(link.geometry.coords)[1:-1]
+            # extra attributes:
+            for att in self.config['extra_attributes']['LINK']:
+                emme_link['@' + att.lower()] = link[att]
 
+            emme_link.vertices = vertices = list(link.geometry.coords)[1:-1]
+        scenario.publish_network(network)
         for i in self.turns.j_node.unique():
             if network.node(i):
                 test =  network.create_intersection(i)
