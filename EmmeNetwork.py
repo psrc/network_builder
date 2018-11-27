@@ -17,7 +17,7 @@ class EmmeNetwork(object):
         self.time_period = time_period
         self.links = model_links
         self.nodes = model_nodes
-        self.turns = turns
+        self.turns = turns[turns['Function' + time_period.upper()] <>99]
         self.transit_segments = transit_segments
         #transit_lines = transit_lines[transit_lines.InServiceD==2014]
         transit_lines = transit_lines.loc[transit_lines['Headway_' + self.time_period] > 0]

@@ -266,14 +266,12 @@ class EmmeProject:
     def export_base_network(self, file_name):
         NAMESPACE=("inro.emme.data.network.base.export_base_network")
         export_basenet = self.m.tool(NAMESPACE)
-        export_basenet(export_file = file_name,
-               field_separator = ",")
+        export_basenet(export_file = file_name)
 
     def export_turns(self, file_name):
         NAMESPACE=("inro.emme.data.network.turn.export_turns")
         export_turns = self.m.tool(NAMESPACE)
-        export_turns(export_file = file_name,
-               field_separator = ",")
+        export_turns(export_file = file_name)
 
     def export_transit(self, file_name):
         NAMESPACE=("inro.emme.data.network.transit.export_transit_lines")

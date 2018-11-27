@@ -143,8 +143,9 @@ if __name__ == '__main__':
             k_node = int(to_edge.NewINode)
         else:
             k_node = int(to_edge.NewJNode)
-        turn_list.append({'i_node' : i_node, 'j_node' : j_node, 'k_node' : k_node})
+        turn_list.append({'turn_id': turn.TurnID, 'i_node' : i_node, 'j_node' : j_node, 'k_node' : k_node})
     turn_df = pd.DataFrame(turn_list)
+    turn_df = turn_df.merge(gdf_TurnMovements, how = 'left', left_on = 'turn_id', right_on = 'TurnID')
 
     if config['create_emme_network']:
         logger.info("creating emme bank")

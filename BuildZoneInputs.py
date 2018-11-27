@@ -7,7 +7,7 @@ from shapely.geometry import Point
 
 class BuildZoneInputs(object):
 
-    def __init__(self, scenario_junctions, projects_gdf, point_events_df, config):
+    def __init__(self, scenario_junctions, projects_gdf, point_events_df, config ):
         self.scenario_junctions = scenario_junctions
         self.project_gdf = projects_gdf
         self.point_events_df = point_events_df

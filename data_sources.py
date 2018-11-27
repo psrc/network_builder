@@ -33,19 +33,27 @@ gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(gdf_TransitL
 
 
 ### Projects
-gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
-gdf_ProjectRoutes['FacilityTy'] = gdf_ProjectRoutes['Change_Typ']
+if config['update_network_from_projects']:
+    gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
+    gdf_ProjectRoutes['FacilityTy'] = gdf_ProjectRoutes['Change_Typ']
+else:
+    gdf_ProjectRoutes = None
 
 
 ### tblLineProjects
-df_tblLineProjects = pd.read_csv(os.path.join(data_path, 'tblLineProjects.csv'))
-df_tblLineProjects = df_tblLineProjects[df_tblLineProjects.projRteID.isin(gdf_ProjectRoutes.projRteID)]
+if config['update_network_from_projects']:
+    #df_tblLineProjects = pd.read_csv(os.path.join(data_path, 'tblLineProjects.csv'))
+    df_tblLineProjects = df_tblLineProjects[df_tblLineProjects.projRteID.isin(gdf_ProjectRoutes.projRteID)]
 
 # Point Events (Projects that change capacity of a Park and Ride)
-df_evtPointProjectOutcomes = pd.read_csv(os.path.join(data_path, 'evtPointProjectOutcomes.csv'))
+if config['update_network_from_projects']:
+    df_evtPointProjectOutcomes = pd.read_csv(os.path.join(data_path, 'evtPointProjectOutcomes.csv'))
+else:
+    df_evtPointProjectOutcomes = None
 
-gdf_ProjectRoutes = gdf_ProjectRoutes.merge(df_tblLineProjects, how = 'left', on = 'projRteID')
-gdf_ProjectRoutes = gdf_ProjectRoutes.loc[gdf_ProjectRoutes['InServiceDate'] <= config['model_year']]
+if config['update_network_from_projects']:
+    gdf_ProjectRoutes = gdf_ProjectRoutes.merge(df_tblLineProjects, how = 'left', on = 'projRteID')
+    gdf_ProjectRoutes = gdf_ProjectRoutes.loc[gdf_ProjectRoutes['InServiceDate'] <= config['model_year']]
 
 ##gdf_ProjectRoutes = gdf_ProjectRoutes[gdf_ProjectRoutes.projRteID.isin(project_list)]
 
@@ -53,4 +61,5 @@ gdf_ProjectRoutes = gdf_ProjectRoutes.loc[gdf_ProjectRoutes['InServiceDate'] <= 
 gdf_TurnMovements = gpd.read_file(os.path.join(data_path, 'TurnMovements.shp'))
 
 ## Juncions
+
 gdf_Junctions = gpd.read_file(os.path.join(data_path, 'TransRefJunctions.shp'))
