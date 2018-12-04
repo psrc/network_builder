@@ -195,9 +195,11 @@ if __name__ == '__main__':
             tod_edges = pd.concat([tod_edges, pd.DataFrame(test.hov_edges)],)
             # need to reset so we dont have duplicate index values
             tod_edges.reset_index(inplace = True)
+            tod_edges.crs =  {'init' : 'EPSG:2285'}
 
             tod_junctions =  pd.concat([scenario_junctions, test.hov_junctions])
             tod_junctions.reset_index(inplace = True)
+            tod_junctions.crs =  {'init' : 'EPSG:2285'}
 
             test = BuildScenarioLinks(tod_edges, tod_junctions, time_period, config, config['reversibles'][time_period][0],config['reversibles'][time_period][1])
             model_links = test.full_network

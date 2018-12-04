@@ -64,30 +64,31 @@ class EmmeNetwork(object):
 
         for link in self.links.iterrows():
             link = link[1]
-            emme_link = network.create_link(link.i, link.j, link.modes)
-            emme_link.type = int(link.type)
-            emme_link.num_lanes = int(link.lanes)
-            emme_link.length = link.length
-            emme_link.volume_delay_func = int(link.vdf)
-            emme_link.data1 = int(link.ul1)
+            if int(link.lanes) > 0:
+                emme_link = network.create_link(link.i, link.j, link.modes)
+                emme_link.type = int(link.type)
+                emme_link.num_lanes = int(link.lanes)
+                emme_link.length = link.length
+                emme_link.volume_delay_func = int(link.vdf)
+                emme_link.data1 = int(link.ul1)
             #if link.modes in self.config['link_time_modes']:
             #    emme_link.data2 = link.Processing_x/1000.0
             #else:
-            emme_link.data2 = round(link.ul2, 2)
-            emme_link.data3 = int(link.ul3)
+                emme_link.data2 = round(link.ul2, 2)
+                emme_link.data3 = int(link.ul3)
             # extra attributes:
-            for att in self.config['extra_attributes']['LINK']:
-                emme_link['@' + att.lower()] = link[att]
+                for att in self.config['extra_attributes']['LINK']:
+                    emme_link['@' + att.lower()] = link[att]
 
-            emme_link.vertices = vertices = list(link.geometry.coords)[1:-1]
+                emme_link.vertices = vertices = list(link.geometry.coords)[1:-1]
+            else:
+                self._logger.warning('No lanes for link %s-%s in the %s network! Removing Link.' % (link.i, link.j, self.time_period))
         scenario.publish_network(network)
         for i in self.turns.j_node.unique():
             if network.node(i):
                 test =  network.create_intersection(i)
             else:
                 self._logger.warning('Could not find find node %s in %s network!' % (i, self.time_period))
-        for turn in network.turns():
-            print turn.id
         for turn in self.turns.iterrows():
             turn = turn[1]
             #test = network.create_intersection(turn.i_node)
