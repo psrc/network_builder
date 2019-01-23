@@ -182,6 +182,7 @@ if __name__ == '__main__':
         os.makedirs(os.path.join(build_file_folder, 'transit'))
         os.makedirs(os.path.join(build_file_folder, 'turns'))
         os.makedirs(os.path.join(build_file_folder, 'shape'))
+        os.makedirs(os.path.join(build_file_folder, 'extra_attributes'))
 
         for time_period in config['time_periods']:
             dir = os.path.join('outputs', 'shapefiles', time_period)
@@ -275,8 +276,11 @@ if __name__ == '__main__':
                 path = os.path.join(build_file_folder, 'turns', time_period.lower() + '_turns.in')
                 my_project.export_turns(path)
 
-               # path = os.path.join(build_file_folder, 'shape', time_period.lower() + '_shape.in')
-               # my_project.export_shape(path)
+                path = os.path.join(build_file_folder, 'extra_attributes', time_period.lower() + '_link_attributes.in')
+                my_project.export_extra_attributes(['LINK'], path)
+
+                path = os.path.join(build_file_folder, 'shape', time_period.lower() + '_shape.in')
+                my_project.export_shape(path)
 
 
 

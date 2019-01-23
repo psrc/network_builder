@@ -22,25 +22,25 @@ gdf_TransRefEdges = gdf_TransRefEdges[gdf_TransRefEdges.length > 0]
 
 #gdf_TransRefEdges = gpd.read_file(os.path.join(data_path, 'test.shp'))
 gdf_TransRefEdges = gdf_TransRefEdges.merge(df_modeAttributes, how = 'left', on = 'PSRCEdgeID')
-gdf_TransRefEdges.crs = {'init' : 'EPSG:2285'}
+gdf_TransRefEdges.crs = config['crs']
 
 
 ## TransitLines
 gdf_TransitLines = gpd.read_file(os.path.join(data_path, 'TransitLines.shp'))
 gdf_TransitLines = gdf_TransitLines[gdf_TransitLines.InServiceD==model_year]
-gdf_TransitLines.crs = {'init' : 'EPSG:285'}
+gdf_TransitLines.crs = config['crs']
 #gdf_TransitLines = gdf_TransitLines[gdf_TransitLines.LineID == 114091]
 
 ### TransitPoints
 gdf_TransitPoints = gpd.read_file(os.path.join(data_path, 'TransitPoints.shp'))
 gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(gdf_TransitLines.LineID)]
-gdf_TransitPoints.crs = {'init' : 'EPSG:2285'}
+gdf_TransitPoints.crs = config['crs']
 
 ### Projects
 if config['update_network_from_projects']:
     gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
     gdf_ProjectRoutes['FacilityTy'] = gdf_ProjectRoutes['Change_Typ']
-    gdf_ProjectRoutes.crs = {'init' : 'EPSG:2285'}
+    gdf_ProjectRoutes.crs = config['crs']
 else:
     gdf_ProjectRoutes = None
 
@@ -65,9 +65,9 @@ if config['update_network_from_projects']:
 ## Turns
 gdf_TurnMovements = gpd.read_file(os.path.join(data_path, 'TurnMovements.shp'))
 gdf_TurnMovements = gdf_TurnMovements[gdf_TurnMovements['InServiceD'] <= config['model_year']]
-gdf_TurnMovements.crs = {'init' : 'EPSG:2285'}
+gdf_TurnMovements.crs = config['crs']
 
 ## Juncions
 
 gdf_Junctions = gpd.read_file(os.path.join(data_path, 'TransRefJunctions.shp'))
-gdf_Junctions.crs = {'init' : 'EPSG:2285'}
+gdf_Junctions.crs = config['crs']

@@ -205,6 +205,11 @@ class EmmeProject:
         process = self.m.tool(NAMESPACE)
         process(name)
 
+    def export_extra_attributes(self, attribute_list, file_name):
+        NAMESPACE=("inro.emme.data.extra_attribute.export_extra_attributes")
+        process = self.m.tool(NAMESPACE)
+        process(attribute_list, file_name)
+
     def network_calculator(self, type, **kwargs):
         spec = json_to_dictionary(type)
         for name, value in kwargs.items():
@@ -276,8 +281,7 @@ class EmmeProject:
     def export_transit(self, file_name):
         NAMESPACE=("inro.emme.data.network.transit.export_transit_lines")
         export_transit = self.m.tool(NAMESPACE)
-        export_transit(export_file = file_name,
-               field_separator = ",")
+        export_transit(export_file = file_name)
 
     def export_shape(self, file_name):
         NAMESPACE=("inro.emme.data.network.base.export_link_shape")

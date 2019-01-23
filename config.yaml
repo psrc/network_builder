@@ -14,6 +14,9 @@ update_network_from_projects : False
 
 time_periods: ['AM', 'MD', 'PM', 'EV', 'NI']
 
+crs:
+  'init' : 'EPSG:2285'
+
 reversibles:
   'AM' : [False, False]
   'MD' : [True, False]
