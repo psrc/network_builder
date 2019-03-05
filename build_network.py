@@ -16,6 +16,7 @@ from ConfigureTransitSegments import *
 from EmmeProject import *
 from EmmeNetwork import *
 from BuildZoneInputs import *
+from TransitHeadways import *
 import logging
 import log_controller
 import datetime
@@ -68,7 +69,8 @@ def nodes_to_retain(edges):
     centroids = nodes_from_centroids(gdf_Junctions)
     turn_nodes = nodes_from_turns(gdf_TurnMovements, edges)
     transit_nodes = nodes_from_transit(gdf_TransitPoints)
-    return turn_nodes + centroids + transit_nodes + junctions
+    edge_nodes = nodes_from_edges(df_tolls['PSRCEdgeID'].tolist(), edges)
+    return turn_nodes + centroids + transit_nodes + junctions + edge_nodes
     
 
 
@@ -121,7 +123,7 @@ if __name__ == '__main__':
     final_edge_count = len(scenario_edges)
     logger.info("Network went from %s edges to %s." % (start_edge_count, final_edge_count))
     logger.info("Finished thinning network")
-    
+   
     #turns:
     turn_list = []
     for turn in gdf_TurnMovements.iterrows():
@@ -149,7 +151,7 @@ if __name__ == '__main__':
 
     if config['create_emme_network']:
         logger.info("creating emme bank")
-        emme_folder = os.path.join('outputs', config['emme_folder_name'])
+        emme_folder = os.path.join(config['output_dir'], config['emme_folder_name'])
         emmebank_dimensions_dict = json.load(open(os.path.join(config['data_path'], 'emme_bank_dimensions.json')))
         if os.path.exists(emme_folder):
             shutil.rmtree(emme_folder)
@@ -174,7 +176,7 @@ if __name__ == '__main__':
         my_project = EmmeProject(emme_folder + '\\emme_networks' + '\\emme_networks.emp')
         os.path.join(emme_folder + 'emme_networks')
         
-        build_file_folder = os.path.join('outputs', config['emme_folder_name'], 'build_files')
+        build_file_folder = os.path.join(config['output_dir'], config['emme_folder_name'], 'build_files')
         if os.path.exists(build_file_folder):
             shutil.rmtree(build_file_folder)
         os.makedirs(build_file_folder)
@@ -185,7 +187,7 @@ if __name__ == '__main__':
         os.makedirs(os.path.join(build_file_folder, 'extra_attributes'))
 
         for time_period in config['time_periods']:
-            dir = os.path.join('outputs', 'shapefiles', time_period)
+            dir = os.path.join(config['output_dir'], 'shapefiles', time_period)
             try:
                 os.makedirs(dir)
             except OSError as e:
@@ -214,6 +216,11 @@ if __name__ == '__main__':
                 zonal_inputs_tuple[0].to_csv(path, columns = ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External'], index = False, sep='\t')
                 path = os.path.join(build_file_folder, 'p_r_nodes.csv')
                 zonal_inputs_tuple[1].to_csv(path, columns = ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost'], index = False) 
+                
+                headways = TransitHeadways(gdf_TransitLines, df_transit_frequencies, config)
+                headways_df = headways.build_headways()
+                path = os.path.join(build_file_folder, 'headways.csv')
+                headways_df.to_csv(path)
 
                                  
   
@@ -228,8 +235,9 @@ if __name__ == '__main__':
                 # when tracing, only use edges that support transit
                 transit_edges = model_links.loc[(model_links.i > config['max_zone_number']) & (model_links.j > config['max_zone_number'])].copy()  
                 transit_edges = transit_edges.loc[transit_edges['modes'] <> 'wk']
+                transit_edges = transit_edges.loc[transit_edges['lanes'] > 0]
     
-                pool = mp.Pool(1, build_transit_segments_parallel.init_pool, [transit_edges, gdf_TransitLines, gdf_TransitPoints])
+                pool = mp.Pool(config['number_of_pools'], build_transit_segments_parallel.init_pool, [transit_edges, gdf_TransitLines, gdf_TransitPoints])
                 results = pool.map(build_transit_segments_parallel.trace_transit_route, route_id_list)
 
                 results = [item for sublist in results for item in sublist]
@@ -247,13 +255,11 @@ if __name__ == '__main__':
         
             if config['save_network_files'] :
                 model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), schema = {'geometry': 'Point','properties': {'is_zone': 'int', 'i' : 'int', 'P_RStalls' : 'int', 'PSRCjunctI' : 'int', 'Processing' : 'int'}})
-                link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str',  
-                                                                                   'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
-                                                                                   'ul2' : 'float', 'ul3' : 'int', 'PSRCEdgeID' : 'int', 
-                                                                                   'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str', 
-                                                                                   'Processing_x' : 'int', 'projRteID' : 'int', 'CountyID' : 'int', 'CountID' : 'int'})
-                link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
-                model_links.to_file(os.path.join(dir, time_period + '_edges.shp'), schema = link_schema)
+                #link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str', 'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
+                                                     #'ul2' : 'float', 'ul3' : 'int', 'toll1' : 'int', 'toll2' : 'int', 'toll3' : 'int', 'trkc1' : 'int', 'trkc2' : 'int', 'trkc3' : 'int','PSRCEdgeID' : 'int', 
+                                                     #'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str', 'Processing_x' : 'int', 'projRteID' : 'int', 'CountyID' : 'int', 'CountID' : 'int'})
+                #link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
+                model_links.to_file(os.path.join(dir, time_period + '_edges.shp'),  driver='ESRI Shapefile')
 
             if config['create_emme_network']:
                 if route_id_list:

@@ -71,9 +71,6 @@ class EmmeNetwork(object):
                 emme_link.length = link.length
                 emme_link.volume_delay_func = int(link.vdf)
                 emme_link.data1 = int(link.ul1)
-            #if link.modes in self.config['link_time_modes']:
-            #    emme_link.data2 = link.Processing_x/1000.0
-            #else:
                 emme_link.data2 = round(link.ul2, 2)
                 emme_link.data3 = int(link.ul3)
             # extra attributes:
@@ -92,11 +89,12 @@ class EmmeNetwork(object):
         for turn in self.turns.iterrows():
             turn = turn[1]
             #test = network.create_intersection(turn.i_node)
-            emme_turn = network.turn(turn.i_node, turn.j_node, turn.k_node)
-            if emme_turn:
-                emme_turn.penalty_func = 0
-            else :
-                self._logger.warning('Could not find find turn %s, %s, %s in %s network!' % (turn.i_node, turn.j_node, turn.k_node, self.time_period))
+            if turn['Function' + self.time_period] == 0:
+                emme_turn = network.turn(turn.i_node, turn.j_node, turn.k_node)
+                if emme_turn:
+                    emme_turn.penalty_func = 0
+                else :
+                    self._logger.warning('Could not find find turn %s, %s, %s in %s network!' % (turn.i_node, turn.j_node, turn.k_node, self.time_period))
 
         if self.transit_segments is not None:
             self.transit_segments.set_index('seg_id', inplace = True)
@@ -111,7 +109,7 @@ class EmmeNetwork(object):
                 else:
                     nodes = segs.INode.tolist() + [segs.JNode.tolist()[-1]]
                     emme_line = network.create_transit_line(line.LineID, line.VehicleTyp , nodes)
-                emme_line.description = line.Descriptio
+                emme_line.description = line.Descriptio[0:20]
                 emme_line.speed = line.Speed
                 emme_line.headway = line['Headway_' + self.time_period]
                 emme_line.data1 = line.Processing

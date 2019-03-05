@@ -14,15 +14,17 @@ config = yaml.safe_load(open("config.yaml"))
 def setup_custom_logger(name):
     # create dir for main log file if it doesn't exist
     try:
-        os.makedirs('outputs/logs')
+        os.makedirs(os.path.join(config['output_dir'], 'logs'))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
     try:
-        os.remove('outputs/logs/' + config['main_log_file'])
+        #os.remove('outputs/logs/' + config['main_log_file'])
+        os.remove(os.path.join(config['output_dir'], config['main_log_file']))
     except OSError:
         pass
-    logging.basicConfig(filename='outputs/logs/' + config['main_log_file'],format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+    logging.basicConfig(filename= os.path.join(config['output_dir'], 'logs', config['main_log_file']),format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+    #logging.basicConfig(filename='outputs/logs/' + config['main_log_file'],format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     handler = logging.StreamHandler()
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)

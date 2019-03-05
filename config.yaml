@@ -1,5 +1,7 @@
 data_path : D:/stefan/GDB_Data/osm2_2014
 
+output_dir: outputs2
+
 model_year: 2018
 
 main_log_file : 'run_log'
@@ -12,7 +14,23 @@ max_regular_zone: 3700
 
 update_network_from_projects : False
 
+number_of_pools: 12
+
+
 time_periods: ['AM', 'MD', 'PM', 'EV', 'NI']
+
+transit_headway_mapper : 
+  'hdw_5to6' : ['hour_5']
+  'hdw_6to7' : ['hour_6']
+  'hdw_7to8' : ['hour_7'] 
+  'hdw_8to9' : ['hour_8']
+  'hdw_9to10' : ['hour_9']
+  'hdw_10to14' : ['hour_10', 'hour_11', 'hour_12', 'hour_13']
+  'hdw_14to15' : ['hour_14']
+  'hdw_15to16' : ['hour_15']
+  'hdw_16to17' : ['hour_16']
+  'hdw_17to18' : ['hour_17']
+  'hdw_18to20' : ['hour_18', 'hour_19']
 
 crs:
   'init' : 'EPSG:2285'
@@ -25,7 +43,7 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityTy', 'CountyID', 'CountID']
+  'LINK' : ['FacilityTy', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
 
 # Directional attributes used for project updates & network thinning.
 dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLanesGPNI', 'JILanesGPAM', 
@@ -33,7 +51,16 @@ dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLan
 'IJLanesHOVAM', 'IJLanesHOVMD', 'IJLanesHOVPM', 'IJLanesHOVEV', 'IJLanesHOVNI', 'JILanesHOVAM', 
 'JILanesHOVMD', 'JILanesHOVPM', 'JILanesHOVEV', 'JILanesHOVNI', 'IJSpeedLimit', 'JISpeedLimit', 
 'IJVDFunc', 'JIVDFunc', 'IJLaneCapGP', 'IJLaneCapHOV', 'JILaneCapGP', 'JILaneCapHOV', 'IJSideWalks', 
-'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK']
+'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK', 'IJtollSOVAM', 
+'IJtollSOVMD', 'IJtollSOVPM', 'IJtollSOVEV', 'IJtollSOVNI', 'JItollSOVAM', 'JItollSOVMD', 'JItollSOVPM', 
+'JItollSOVEV', 'JItollSOVNI', 'IJtollHOV2AM', 'IJtollHOV2MD', 'IJtollHOV2PM', 'IJtollHOV2EV', 'IJtollHOV2NI', 
+'JItollHOV2AM', 'JItollHOV2MD', 'JItollHOV2PM','JItollHOV2EV', 'JItollHOV2NI', 'IJtollHOV3AM', 'IJtollHOV3MD',
+'IJtollHOV3PM', 'IJtollHOV3EV', 'IJtollHOV3NI', 'JItollHOV3AM','JItollHOV3MD', 'JItollHOV3PM', 'JItollHOV3EV', 
+'JItollHOV3NI', 'IJtollTrkLtAM', 'IJtollTrkLtMD', 'IJtollTrkLtPM', 'IJtollTrkLtEV', 'IJtollTrkLtNI', 'JItollTrkLtAM', 
+'JItollTrkLtMD', 'JItollTrkLtPM','JItollTrkLtEV', 'JItollTrkLtNI', 'IJtollTrkMedAM','IJtollTrkMedMD', 'IJtollTrkMedPM', 
+'IJtollTrkMedEV','IJtollTrkMedNI', 'JItollTrkMedAM', 'JItollTrkMedMD','JItollTrkMedPM', 'JItollTrkMedEV', 'JItollTrkMedNI', 
+'IJtollTrkHvyAM', 'IJtollTrkHvyMD', 'IJtollTrkHvyPM','IJtollTrkHvyEV', 'IJtollTrkHvyNI', 'JItollTrkHvyAM', 'JItollTrkHvyMD', 
+'JItollTrkHvyPM', 'JItollTrkHvyEV','JItollTrkHvyNI']
 
 # Non-Directional attributes used for networkt thnning.
 non_dir_columns : ['FacilityTy', 'NewFacilit', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
@@ -43,14 +70,43 @@ project_update_columns : ['projRteID', 'Change_Typ', 'Modes', 'FacilityTy']
 
 intermediate_keep_columns : ['PSRCEdgeID', 'FacilityTy', 'NewFacilit', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID', 'Processing_x']
 
-emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3']
+emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2','trkc3']
 
 additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityTy', 'Processing_x', 'projRteID', 'CountID', 'CountyID']
 
 emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctI']
 
+toll_columns : ['PSRCEdgeID', 'IJtollSOVAM', 'IJtollSOVMD',
+       'IJtollSOVPM', 'IJtollSOVEV', 'IJtollSOVNI', 'JItollSOVAM',
+       'JItollSOVMD', 'JItollSOVPM', 'JItollSOVEV', 'JItollSOVNI',
+       'IJtollHOV2AM', 'IJtollHOV2MD', 'IJtollHOV2PM', 'IJtollHOV2EV',
+       'IJtollHOV2NI', 'JItollHOV2AM', 'JItollHOV2MD', 'JItollHOV2PM',
+       'JItollHOV2EV', 'JItollHOV2NI', 'IJtollHOV3AM', 'IJtollHOV3MD',
+       'IJtollHOV3PM', 'IJtollHOV3EV', 'IJtollHOV3NI', 'JItollHOV3AM',
+       'JItollHOV3MD', 'JItollHOV3PM', 'JItollHOV3EV', 'JItollHOV3NI',
+       'IJtollTrkLtAM', 'IJtollTrkLtMD', 'IJtollTrkLtPM', 'IJtollTrkLtEV',
+       'IJtollTrkLtNI', 'JItollTrkLtAM', 'JItollTrkLtMD', 'JItollTrkLtPM',
+       'JItollTrkLtEV', 'JItollTrkLtNI', 'IJtollTrkMedAM',
+       'IJtollTrkMedMD', 'IJtollTrkMedPM', 'IJtollTrkMedEV',
+       'IJtollTrkMedNI', 'JItollTrkMedAM', 'JItollTrkMedMD',
+       'JItollTrkMedPM', 'JItollTrkMedEV', 'JItollTrkMedNI',
+       'IJtollTrkHvyAM', 'IJtollTrkHvyMD', 'IJtollTrkHvyPM',
+       'IJtollTrkHvyEV', 'IJtollTrkHvyNI', 'JItollTrkHvyAM',
+       'JItollTrkHvyMD', 'JItollTrkHvyPM', 'JItollTrkHvyEV',
+       'JItollTrkHvyNI', 'ModelYear']
+
 # links with these modes use time, not speed limit. 
-link_time_modes : ['f', 'rc']
+link_time_facility_types : [12, 13, 15, 16]
+
+hot_lane_codes: [5]
+
+hot_rate_dict: {'AM' : 35, 'MD' : 10, 'PM' : 35, 'EV' : 10, 'NI' : 10}
+
+hot_tolls:
+  5: ['toll1']
+  6: ['toll1', 'toll2']
+  12: ['toll1']
+  13: ['toll1', 'toll2']
 
 walk_links:
   direction: 1
@@ -63,6 +119,12 @@ walk_links:
   ul1: 0
   ul2: 3
   ul3: 0
+  toll1: 0
+  toll2: 0 
+  toll3: 0
+  trkc1: 0
+  trkc2: 0 
+  trkc3: 0
 
 weave_links:
   direction: 1
@@ -76,6 +138,12 @@ weave_links:
   ul1: 2000
   ul2: 0
   ul3: 0
+  toll1: 0
+  toll2: 0 
+  toll3: 0
+  trkc1: 0
+  trkc2: 0 
+  trkc3: 0
 
 standard_links:
   direction: 1
@@ -88,6 +156,13 @@ standard_links:
   ul1: IJLaneCapGP
   ul2: IJSpeedLimit
   ul3: NewFacilit
+  toll1: IJtollSOV
+  toll2: IJtollHOV2 
+  toll3: IJtollHOV3
+  trkc1: IJtollTrkLt
+  trkc2: IJtollTrkMed 
+  trkc3: IJtollTrkHvy
+
 
 hov_capacity: 'IJLaneCapHOV'
 
@@ -124,7 +199,7 @@ hov_shift_dist : 1.906090351
 
 build_turns: False    
 build_transit: False
-
+build_transit_headways : True 
 save_network_files : True  
 create_emme_network: True
 export_build_files: True

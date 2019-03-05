@@ -72,6 +72,12 @@ class BuildScenarioLinks(object):
         weave_links = self._configure_weave_link_attributes(weave_links, self.config['weave_links'])
         network.update(weave_links)
 
+        # cpnfigure HOT lane tolls
+        for k, v in self.config['hot_tolls'].iteritems():
+            hot_links = network[(network['IJLanesHOV' + self.time_period] == k) & (network['FacilityTy'] == 999)]
+            hot_links = self._configure_hot_lane_tolls(hot_links, v)
+            network.update(hot_links)
+
         network = network[self.config['emme_link_columns'] + self.config['additional_keep_columns']]
         network.i = network.i.astype(int)
         network.j = network.j.astype(int)
@@ -178,6 +184,13 @@ class BuildScenarioLinks(object):
         edges.ul1 = look_up_dict['ul1']
         edges.ul2 = look_up_dict['ul2']
         edges.ul3 = look_up_dict['ul3']
+        edges.toll1 = look_up_dict['toll1']
+        edges.toll2 = look_up_dict['toll2']
+        edges.toll3 = look_up_dict['toll3']
+        edges.trkc1 = look_up_dict['trkc1']
+        edges.trkc2 = look_up_dict['trkc2']
+        edges.trkc3 = look_up_dict['trkc3']
+        
         return edges
 
     def _configure_weave_link_attributes(self, edges, look_up_dict):
@@ -192,6 +205,13 @@ class BuildScenarioLinks(object):
         edges.ul1 = look_up_dict['ul1']
         edges.ul2 = look_up_dict['ul2']
         edges.ul3 = look_up_dict['ul3']
+        edges.toll1 = look_up_dict['toll1']
+        edges.toll2 = look_up_dict['toll2']
+        edges.toll3 = look_up_dict['toll3']
+        edges.trkc1 = look_up_dict['trkc1']
+        edges.trkc2 = look_up_dict['trkc2']
+        edges.trkc3 = look_up_dict['trkc3']
+
         return edges
 
     def _configure_standard_attributes(self, edges, look_up_dict):
@@ -206,6 +226,12 @@ class BuildScenarioLinks(object):
         edges.ul1 = edges[look_up_dict['ul1']]
         edges.ul2 = edges[look_up_dict['ul2']]
         edges.ul3 = edges[look_up_dict['ul3']]
+        edges.toll1 = edges[look_up_dict['toll1'] + self.time_period]
+        edges.toll2 = edges[look_up_dict['toll2'] + self.time_period]
+        edges.toll3 = edges[look_up_dict['toll3'] + self.time_period]
+        edges.trkc1 = edges[look_up_dict['trkc1'] + self.time_period]
+        edges.trkc2 = edges[look_up_dict['trkc2'] + self.time_period]
+        edges.trkc3 = edges[look_up_dict['trkc3'] + self.time_period]
         return edges
 
     def _configure_hov_attributes(self, edges):
@@ -221,9 +247,15 @@ class BuildScenarioLinks(object):
         edges.j = edges.NewJNode
         return edges
 
+    def _configure_hot_lane_tolls(self, edges, col_list):
+        rate = self.config['hot_rate_dict'][self.time_period]
+        for col in col_list:
+            edges[col] = edges[col] + (rate * edges.length) / 5280
+        return edges
+
     def _configure_transit_links(self, edges):
         edges.ul2 = edges.ul2.astype(float)
-        edges.ul2 = np.where(edges['Modes'].isin(self.config['link_time_modes']), edges.Processing_x/1000.0, edges.ul2)
+        edges.ul2 = np.where(edges['FacilityTy'].isin(self.config['link_time_facility_types']), edges.Processing_x/1000.0, edges.ul2)
         return edges
 
     def _validate_network(self, edges):

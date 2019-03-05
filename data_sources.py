@@ -15,6 +15,12 @@ model_year = config['model_year']
   
 # modeAttributes
 df_modeAttributes = pd.read_csv(os.path.join(data_path, 'modeAttributes.csv'))
+
+# Tolls
+df_tolls = pd.read_csv(os.path.join(data_path, 'modeTolls.csv'))
+df_tolls = df_tolls[config['toll_columns']]
+df_tolls = df_tolls[df_tolls['ModelYear'] == model_year]
+
 # Edges
 gdf_TransRefEdges = gpd.read_file(os.path.join(data_path, 'TransRefEdges.shp'))
 gdf_TransRefEdges = gdf_TransRefEdges[gdf_TransRefEdges.length > 0]
@@ -23,6 +29,9 @@ gdf_TransRefEdges = gdf_TransRefEdges[gdf_TransRefEdges.length > 0]
 #gdf_TransRefEdges = gpd.read_file(os.path.join(data_path, 'test.shp'))
 gdf_TransRefEdges = gdf_TransRefEdges.merge(df_modeAttributes, how = 'left', on = 'PSRCEdgeID')
 gdf_TransRefEdges.crs = config['crs']
+
+gdf_TransRefEdges = gdf_TransRefEdges.merge(df_tolls, how = 'left', on = 'PSRCEdgeID')
+gdf_TransRefEdges.fillna(0, inplace = True)
 
 
 ## TransitLines
@@ -71,3 +80,10 @@ gdf_TurnMovements.crs = config['crs']
 
 gdf_Junctions = gpd.read_file(os.path.join(data_path, 'TransRefJunctions.shp'))
 gdf_Junctions.crs = config['crs']
+
+
+
+# Transit Frequencies:
+if config['build_transit_headways']:
+    df_transit_frequencies = pd.read_csv(os.path.join(data_path, 'transitFrequency.csv'))
+
