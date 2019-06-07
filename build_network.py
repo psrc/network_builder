@@ -254,7 +254,7 @@ if __name__ == '__main__':
                     transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
         
             if config['save_network_files'] :
-                model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), schema = {'geometry': 'Point','properties': {'is_zone': 'int', 'i' : 'int', 'P_RStalls' : 'int', 'PSRCjunctI' : 'int', 'Processing' : 'int'}})
+                model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), driver='ESRI Shapefile')
                 #link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str', 'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
                                                      #'ul2' : 'float', 'ul3' : 'int', 'toll1' : 'int', 'toll2' : 'int', 'toll3' : 'int', 'trkc1' : 'int', 'trkc2' : 'int', 'trkc3' : 'int','PSRCEdgeID' : 'int', 
                                                      #'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str', 'Processing_x' : 'int', 'projRteID' : 'int', 'CountyID' : 'int', 'CountID' : 'int'})
@@ -284,6 +284,7 @@ if __name__ == '__main__':
 
                 path = os.path.join(build_file_folder, 'extra_attributes', time_period.lower() + '_link_attributes.in')
                 my_project.export_extra_attributes(['LINK'], path)
+                my_project.export_extra_attributes(['NODE'], path)
 
                 path = os.path.join(build_file_folder, 'shape', time_period.lower() + '_shape.in')
                 my_project.export_shape(path)

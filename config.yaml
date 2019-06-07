@@ -1,8 +1,8 @@
-data_path : D:/stefan/GDB_Data/osm2_2014
+data_path : D:/stefan/GDB_Data/OSM_2040
 
-output_dir: outputs2
+output_dir: demo_outputs
 
-model_year: 2018
+model_year: 2040
 
 main_log_file : 'run_log'
 
@@ -12,7 +12,7 @@ node_offset: 0
 
 max_regular_zone: 3700
 
-update_network_from_projects : False
+update_network_from_projects : True 
 
 number_of_pools: 12
 
@@ -44,6 +44,7 @@ reversibles:
 
 extra_attributes:
   'LINK' : ['FacilityTy', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
+  'NODE' : ['lr_walk']
 
 # Directional attributes used for project updates & network thinning.
 dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLanesGPNI', 'JILanesGPAM', 
@@ -51,7 +52,11 @@ dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLan
 'IJLanesHOVAM', 'IJLanesHOVMD', 'IJLanesHOVPM', 'IJLanesHOVEV', 'IJLanesHOVNI', 'JILanesHOVAM', 
 'JILanesHOVMD', 'JILanesHOVPM', 'JILanesHOVEV', 'JILanesHOVNI', 'IJSpeedLimit', 'JISpeedLimit', 
 'IJVDFunc', 'JIVDFunc', 'IJLaneCapGP', 'IJLaneCapHOV', 'JILaneCapGP', 'JILaneCapHOV', 'IJSideWalks', 
-'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK', 'IJtollSOVAM', 
+'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK']
+
+toll_columns: ['PSRCEdgeID', 'ModelYear']  
+
+dir_toll_columns : ['IJtollSOVAM', 
 'IJtollSOVMD', 'IJtollSOVPM', 'IJtollSOVEV', 'IJtollSOVNI', 'JItollSOVAM', 'JItollSOVMD', 'JItollSOVPM', 
 'JItollSOVEV', 'JItollSOVNI', 'IJtollHOV2AM', 'IJtollHOV2MD', 'IJtollHOV2PM', 'IJtollHOV2EV', 'IJtollHOV2NI', 
 'JItollHOV2AM', 'JItollHOV2MD', 'JItollHOV2PM','JItollHOV2EV', 'JItollHOV2NI', 'IJtollHOV3AM', 'IJtollHOV3MD',
@@ -74,31 +79,11 @@ emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 
 
 additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityTy', 'Processing_x', 'projRteID', 'CountID', 'CountyID']
 
-emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctI']
+emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctI', 'lr_walk']
 
-toll_columns : ['PSRCEdgeID', 'IJtollSOVAM', 'IJtollSOVMD',
-       'IJtollSOVPM', 'IJtollSOVEV', 'IJtollSOVNI', 'JItollSOVAM',
-       'JItollSOVMD', 'JItollSOVPM', 'JItollSOVEV', 'JItollSOVNI',
-       'IJtollHOV2AM', 'IJtollHOV2MD', 'IJtollHOV2PM', 'IJtollHOV2EV',
-       'IJtollHOV2NI', 'JItollHOV2AM', 'JItollHOV2MD', 'JItollHOV2PM',
-       'JItollHOV2EV', 'JItollHOV2NI', 'IJtollHOV3AM', 'IJtollHOV3MD',
-       'IJtollHOV3PM', 'IJtollHOV3EV', 'IJtollHOV3NI', 'JItollHOV3AM',
-       'JItollHOV3MD', 'JItollHOV3PM', 'JItollHOV3EV', 'JItollHOV3NI',
-       'IJtollTrkLtAM', 'IJtollTrkLtMD', 'IJtollTrkLtPM', 'IJtollTrkLtEV',
-       'IJtollTrkLtNI', 'JItollTrkLtAM', 'JItollTrkLtMD', 'JItollTrkLtPM',
-       'JItollTrkLtEV', 'JItollTrkLtNI', 'IJtollTrkMedAM',
-       'IJtollTrkMedMD', 'IJtollTrkMedPM', 'IJtollTrkMedEV',
-       'IJtollTrkMedNI', 'JItollTrkMedAM', 'JItollTrkMedMD',
-       'JItollTrkMedPM', 'JItollTrkMedEV', 'JItollTrkMedNI',
-       'IJtollTrkHvyAM', 'IJtollTrkHvyMD', 'IJtollTrkHvyPM',
-       'IJtollTrkHvyEV', 'IJtollTrkHvyNI', 'JItollTrkHvyAM',
-       'JItollTrkHvyMD', 'JItollTrkHvyPM', 'JItollTrkHvyEV',
-       'JItollTrkHvyNI', 'ModelYear']
 
 # links with these modes use time, not speed limit. 
 link_time_facility_types : [12, 13, 15, 16]
-
-hot_lane_codes: [5]
 
 hot_rate_dict: {'AM' : 35, 'MD' : 10, 'PM' : 35, 'EV' : 10, 'NI' : 10}
 
@@ -172,8 +157,10 @@ hov_lanes:
   3: 1
   4: 1
   5: 1
+  6: 1
   7: 2
   12: 2
+  13: 2
   14: 1
 
 hov_modes:
@@ -182,8 +169,10 @@ hov_modes:
   3: 'abp'
   4: 'abp'
   5: 'ashijbedmgp'
+  6: 'ashijvbedmgp'
   7: 'ahijbdmgp'
   12: 'ashijbedmgp'
+  13: 'ashijvbedmgp'
   14: 'ashijvbedmgp'
 
 reverse_walk_link_facility_types : [4]
@@ -197,8 +186,8 @@ project_buffer_dist : 1
 # How far to shift HOV lanes from gP lanes:
 hov_shift_dist : 1.906090351
 
-build_turns: False    
-build_transit: False
+#build_turns: False    
+#build_transit: False
 build_transit_headways : True 
 save_network_files : True  
 create_emme_network: True

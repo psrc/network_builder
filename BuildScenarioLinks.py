@@ -165,8 +165,9 @@ class BuildScenarioLinks(object):
         return LineString(line)
 
     def _switch_attributes_dict(self):
-        switch_columns = [x[1] + x[0] + x[2:] for x in self.config['dir_columns']]
-        rename_dict = dict(zip(self.config['dir_columns'], switch_columns))
+        cols = self.config['dir_columns'] + self.config['dir_toll_columns']
+        switch_columns = [x[1] + x[0] + x[2:] for x in cols]
+        rename_dict = dict(zip(cols, switch_columns))
         # also INode and Jnode
         rename_dict['NewINode'] = 'NewJNode'
         rename_dict['NewJNode'] = 'NewINode'

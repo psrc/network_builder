@@ -18,7 +18,7 @@ df_modeAttributes = pd.read_csv(os.path.join(data_path, 'modeAttributes.csv'))
 
 # Tolls
 df_tolls = pd.read_csv(os.path.join(data_path, 'modeTolls.csv'))
-df_tolls = df_tolls[config['toll_columns']]
+df_tolls = df_tolls[config['toll_columns'] + config['dir_toll_columns']]
 df_tolls = df_tolls[df_tolls['ModelYear'] == model_year]
 
 # Edges
@@ -48,7 +48,7 @@ gdf_TransitPoints.crs = config['crs']
 ### Projects
 if config['update_network_from_projects']:
     gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
-    gdf_ProjectRoutes['FacilityTy'] = gdf_ProjectRoutes['Change_Typ']
+    gdf_ProjectRoutes['FacilityTy'] = gdf_ProjectRoutes['Change_Typ'].astype(int)
     gdf_ProjectRoutes.crs = config['crs']
 else:
     gdf_ProjectRoutes = None
@@ -56,7 +56,7 @@ else:
 
 ### tblLineProjects
 if config['update_network_from_projects']:
-    #df_tblLineProjects = pd.read_csv(os.path.join(data_path, 'tblLineProjects.csv'))
+    df_tblLineProjects = pd.read_csv(os.path.join(data_path, 'tblLineProjects.csv'))
     df_tblLineProjects = df_tblLineProjects[df_tblLineProjects.projRteID.isin(gdf_ProjectRoutes.projRteID)]
 
 # Point Events (Projects that change capacity of a Park and Ride)

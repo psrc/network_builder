@@ -61,6 +61,8 @@ class EmmeNetwork(object):
                 emme_node = network.create_regular_node(node.i)
             emme_node.x = node.geometry.x
             emme_node.y = node.geometry.y
+            for att in self.config['extra_attributes']['NODE']:
+                    emme_node['@' + att.lower()] = node[att]
 
         for link in self.links.iterrows():
             link = link[1]

@@ -317,9 +317,9 @@ class FlagNetworkFromProjects(object):
         merged_projects = merged_projects[
             self.config['project_update_columns'] + self.config['dir_columns']]
         scenario_edges.set_index('PSRCEdgeID', inplace=True)
-        merged_projects.replace(-1, np.NaN, inplace=True)
 
-        # Mode column is string:
+        # Recode -1s to Nan so they do not update scenario edges
+        merged_projects.replace(-1, np.NaN, inplace=True)
         merged_projects.replace('-1', np.NaN, inplace=True)
 
         # Update scenario_edges with project attribues
@@ -327,6 +327,7 @@ class FlagNetworkFromProjects(object):
         scenario_edges.reset_index(inplace=True)
         
         # Delete edges flagged for removal
+        self._logger.info('Removing %s edges deleted by projects' % (len(scenario_edges[scenario_edges['FacilityTy'] == 99])))
         scenario_edges = scenario_edges.loc[scenario_edges['FacilityTy'] <> 99].copy()
 
         return scenario_edges

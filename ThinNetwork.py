@@ -24,7 +24,7 @@ class ThinNetwork(object):
         '''
 
         compare_cols = self.config['non_dir_columns'
-                                   ] + self.config['dir_columns']
+                                   ] + self.config['dir_columns'] + self.config['dir_toll_columns']
 
         compare_atts1 = {key: value for (key, value) in edge1.iteritems()
                          if key in compare_cols}
@@ -41,7 +41,7 @@ class ThinNetwork(object):
         elif edge2_dir == 'JI':
             compare_atts2 = {key[1] + key[0] + key[2:]: value for
                              (key, value) in edge2.iteritems() if
-                             key in self.config['dir_columns']}
+                             key in self.config['dir_columns'] + self.config['dir_toll_columns']}
 
             compare_atts2.update({key: value for (key, value) in
                                   edge2.iteritems() if key in
@@ -91,7 +91,7 @@ class ThinNetwork(object):
 
         self._report_duplicate_edges()
         cols = self.config['intermediate_keep_columns'
-                           ] + self.config['dir_columns']
+                           ] + self.config['dir_columns'] + self.config['dir_toll_columns']
         
         # need to remove any links that are one-way, 
         # but share the reverse node sequence
