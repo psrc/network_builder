@@ -46,6 +46,9 @@ extra_attributes:
   'LINK' : ['FacilityTy', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
   'NODE' : ['lr_walk']
 
+taz_index_columns: ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External']
+park_and_ride_columns: ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost']
+
 # Directional attributes used for project updates & network thinning.
 dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLanesGPNI', 'JILanesGPAM', 
 'JILanesGPMD', 'JILanesGPPM', 'JILanesGPEV', 'JILanesGPNI', 'IJlanesGPadjust', 'JIlanesGPadjust', 
@@ -194,5 +197,7 @@ create_emme_network: True
 export_build_files: True
 emme_folder_name: EMME
 emmebank_title : networks
+coord_unit_length: 0.0001894
+unit_of_length: 'mi'
 modes_file: modes.txt
 transit_vehicle_file: vehicles.txt

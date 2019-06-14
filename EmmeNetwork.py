@@ -90,7 +90,6 @@ class EmmeNetwork(object):
                 self._logger.warning('Could not find find node %s in %s network!' % (i, self.time_period))
         for turn in self.turns.iterrows():
             turn = turn[1]
-            #test = network.create_intersection(turn.i_node)
             if turn['Function' + self.time_period] == 0:
                 emme_turn = network.turn(turn.i_node, turn.j_node, turn.k_node)
                 if emme_turn:

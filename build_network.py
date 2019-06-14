@@ -16,7 +16,7 @@ from ConfigureTransitSegments import *
 from EmmeProject import *
 from EmmeNetwork import *
 from BuildZoneInputs import *
-#from TransitHeadways import *
+from TransitHeadways import *
 import logging
 import log_controller
 import datetime
@@ -33,47 +33,43 @@ import shutil
 from shutil import copy2 as shcopy
 
 
-def nodes_from_turns(turns, edges):
-    edge_list = turns.FrEdgeID.tolist() + turns.ToEdgeID.tolist()
-    edges = edges[edges.PSRCEdgeID.isin(edge_list)]
-    return list(set(edges.INode.tolist() + edges.JNode.tolist()))
+def nodes_from_turns(turns, edges, network_config):
+    edge_list = turns[network_config['turns']['from_link_id']].tolist() + turns[network_config['turns']['to_link_id']].tolist()
+    edges = edges[edges[network_config['links']['id']].isin(edge_list)]
+    return list(set(edges.INode.tolist() + edges.JNode.tolist()))    # Should this be INode and JNode or NewINode?
 
-def nodes_from_transit(transit_points):
-    return list(set(transit_points.PSRCJunctI.tolist()))
+def nodes_from_transit(transit_points, network_config):
+    return list(set(transit_points[newtork_config['transit']['node_id']].tolist()))
 
+def nodes_from_centroids(junctions, network_config):
+    centroid_junctions = junctions[junctions[network_config['nodes']['id']] > 0]
+    return centroid_junctions[newtork_config]['junction']['id'].tolist()
 
-def nodes_from_centroids(junctions):
-    centroid_junctions = junctions[junctions.EMME2nodeI > 0]
-    return centroid_junctions.PSRCjunctI.tolist()
+def retain_junctions(junctions, network_config):
+    retain_junctions = junctions[junctions[network_config['junctions']['type']] == 10]
+    return retain_junctions[network_config['junctions']['id']].tolist()
 
-def retain_junctions(junctions):
-    retain_junctions = junctions[junctions.JunctionTy == 10]
-    return retain_junctions.PSRCjunctI.tolist()
-
-
-def nodes_from_edges(list_of_edges, edges):
-    edges = edges[edges.PSRCEdgeID.isin(list_of_edges)]
+def nodes_from_edges(list_of_edges, edges, network_config):
+    edges = edges[edges[network_config['links']['id']].isin(list_of_edges)]
     node_list = edges.INode.tolist()
     print len(node_list)
     node_list = node_list + edges.JNode.tolist()
     return list(set(node_list))
 
-def get_potential_thin_nodes(edges):
+def get_potential_thin_nodes(edges, v):
     node_list = edges.INode.tolist() + edges.JNode.tolist()
     df = pd.DataFrame(pd.Series(node_list).value_counts(), columns=['node_count'])
     df = df[df.node_count == 2]
     return df.index.tolist()
 
-def nodes_to_retain(edges):
-    junctions = retain_junctions(gdf_Junctions)
-    centroids = nodes_from_centroids(gdf_Junctions)
-    turn_nodes = nodes_from_turns(gdf_TurnMovements, edges)
-    transit_nodes = nodes_from_transit(gdf_TransitPoints)
-    edge_nodes = nodes_from_edges(df_tolls['PSRCEdgeID'].tolist(), edges)
+def nodes_to_retain(edges, network_config):
+    junctions = retain_junctions(gdf_Junctions, network_config)
+    centroids = nodes_from_centroids(gdf_Junctions, network_config)
+    turn_nodes = nodes_from_turns(gdf_TurnMovements, edges, network_config)
+    transit_nodes = nodes_from_transit(gdf_TransitPoints, network_config)
+    edge_nodes = nodes_from_edges(df_tolls[newtork_config]['links']['id'].tolist(), edges)
     return turn_nodes + centroids + transit_nodes + junctions + edge_nodes
     
-
-
 
 #if __name__ == '__main__':
 
@@ -112,7 +108,7 @@ else:
 
 logger.info('Start network thinning')
 start_edge_count = len(scenario_edges)
-retain_nodes = nodes_to_retain(scenario_edges)
+retain_nodes = nodes_to_retain(scenario_edges, network_config)
 potential_thin_nodes = get_potential_thin_nodes(scenario_edges)
 potential_thin_nodes = [x for x in potential_thin_nodes if x not in retain_nodes]
 logger.info(" %s Potential nodes to thin", len(potential_thin_nodes))
@@ -129,7 +125,7 @@ turn_cols = network_config['turns']
 for turn in gdf_TurnMovements.iterrows():
     turn = turn[1]
     j_node = turn[turn_cols['junction']] + config['node_offset']
-    from_edge = scenario_edges[links['link_id'] == turn[turn_cols['from_link_id']]]
+    from_edge = scenario_edges[scenario_edges[links['id']] == turn[turn_cols['from_link_id']]]
     if from_edge.empty:
         logger.warning("Warning: From edge from Turn %s not found!" % (turn[turn_cols['id']]))
         continue
@@ -159,15 +155,15 @@ if config['create_emme_network']:
     bank_path = os.path.join(emme_folder, 'emmebank')
     emmebank = _eb.create(bank_path, emmebank_dimensions_dict)
     emmebank.title = config['emmebank_title']
-    emmebank.unit_of_length = 'mi'
-    emmebank.coord_unit_length = 0.0001894  
+    emmebank.unit_of_length = config['unit_of_length']
+    emmebank.coord_unit_length = config['coord_unit_length']
     scenario = emmebank.create_scenario(999)
     # project
     project = app.create_project(emme_folder, 'emme_networks')
     desktop = app.start_dedicated(False, "SEC", project)
     data_explorer = desktop.data_explorer()   
     database = data_explorer.add_database(bank_path)
-    #open the database added so that there is an active one
+    #open the database  so that there is an active one
     database.open()
     desktop.project.save()
     desktop.close()
@@ -193,40 +189,39 @@ if config['create_emme_network']:
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-        test = BuildHOVSystem(scenario_edges, scenario_junctions, time_period, config)
-        tod_edges = pd.concat([scenario_edges, pd.DataFrame(test.hov_weave_edges)])
-        tod_edges = pd.concat([tod_edges, pd.DataFrame(test.hov_edges)],)
+        hov_network = BuildHOVSystem(scenario_edges, scenario_junctions, time_period, config)
+        tod_edges = pd.concat([scenario_edges, pd.DataFrame(hov_network.hov_weave_edges)])
+        tod_edges = pd.concat([tod_edges, pd.DataFrame(hov_network.hov_edges)],)
         # need to reset so we dont have duplicate index values
         tod_edges.reset_index(inplace = True)
-        tod_edges.crs =  {'init' : 'EPSG:2285'}
+        tod_edges.crs =  {'init' : config['crs']['init']}
 
-        tod_junctions =  pd.concat([scenario_junctions, test.hov_junctions])
+        tod_junctions =  pd.concat([scenario_junctions, hov_network.hov_junctions])
         tod_junctions.reset_index(inplace = True)
-        tod_junctions.crs =  {'init' : 'EPSG:2285'}
+        tod_junctions.crs =  {'init' : config['crs']['init']}
 
-        test = BuildScenarioLinks(tod_edges, tod_junctions, time_period, config, config['reversibles'][time_period][0],config['reversibles'][time_period][1])
-        model_links = test.full_network
-        model_nodes = test.junctions
+        scenario_links = BuildScenarioLinks(tod_edges, tod_junctions, time_period, config, config['reversibles'][time_period][0],config['reversibles'][time_period][1])
+        model_links = scenario_links.full_network
+        model_nodes = scenario_links.junctions
 
         # Use AM network to create zone, park and ride files   
         if time_period == 'AM':
             zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
             zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
             path = os.path.join(build_file_folder, 'TAZIndex.txt')
-            zonal_inputs_tuple[0].to_csv(path, columns = ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External'], index = False, sep='\t')
+            zonal_inputs_tuple[0].to_csv(path, columns = config['taz_index_columns'], index = False, sep='\t')
             path = os.path.join(build_file_folder, 'p_r_nodes.csv')
-            zonal_inputs_tuple[1].to_csv(path, columns = ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost'], index = False) 
+            zonal_inputs_tuple[1].to_csv(path, columns = config['park_and_ride_columns'], index = False) 
                 
             headways = TransitHeadways(gdf_TransitLines, df_transit_frequencies, config)
             headways_df = headways.build_headways()
             path = os.path.join(build_file_folder, 'headways.csv')
             headways_df.to_csv(path)
 
-                                 
-  
-        # Do Transit Stuff here
-        gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctI + config['node_offset']
-        model_links['weight'] = np.where(model_links['FacilityTy'] == 999, .5 * model_links.length, model_links.length)
+        # Build Transit Segments and Lines
+        transit_cols = network_config['transit']
+        gdf_TransitPoints['newNodeID'] = gdf_TransitPoints[transit_cols['node_id']] + config['node_offset']
+        model_links['weight'] = np.where(model_links[links['facility_type']] == 999, .5 * model_links.length, model_links.length)
      
         route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
         if route_id_list:
@@ -245,8 +240,8 @@ if config['create_emme_network']:
 
             transit_segments = pd.DataFrame(results)
             if len(transit_segments) > 1:
-                test = ConfigureTransitSegments(time_period, transit_segments, gdf_TransitLines, model_links, config)
-                transit_segments = test.configure()
+                transit_segments = ConfigureTransitSegments(time_period, transit_segments, gdf_TransitLines, model_links, config)
+                transit_segments = transit_segments.configure()
             else:
                 logger.warning("Warning: There are no transit segements to build transit routes!")
             
@@ -255,10 +250,6 @@ if config['create_emme_network']:
         
         if config['save_network_files'] :
             model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), driver='ESRI Shapefile')
-            #link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str', 'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
-                                                    #'ul2' : 'float', 'ul3' : 'int', 'toll1' : 'int', 'toll2' : 'int', 'toll3' : 'int', 'trkc1' : 'int', 'trkc2' : 'int', 'trkc3' : 'int','PSRCEdgeID' : 'int', 
-                                                    #'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str', 'Processing_x' : 'int', 'projRteID' : 'int', 'CountyID' : 'int', 'CountID' : 'int'})
-            #link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
             model_links.to_file(os.path.join(dir, time_period + '_edges.shp'),  driver='ESRI Shapefile')
 
         if config['create_emme_network']:

@@ -32,7 +32,7 @@ class BuildScenarioLinks(object):
         hov_edges = self._update_hov_oneway(network)
         network.update(hov_edges)
         
-        # upadte all attributes, then do special ones later
+        # update all attributes, then do special ones later
         network = self._configure_standard_attributes(network, self.config['standard_links'])
         
         # switch one way JI to IJ
