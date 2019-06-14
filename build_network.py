@@ -91,10 +91,10 @@ if __name__ == '__main__':
 
     model_year = config['model_year']
 
-    scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
-                                      & (gdf_TransRefEdges.ActiveLink > 0) 
-                                      & (gdf_TransRefEdges.ActiveLink != 999))]
-    scenario_edges['projRteID'] = 0
+    #scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
+    #                                  & (gdf_TransRefEdges.ActiveLink > 0) 
+    #                                  & (gdf_TransRefEdges.ActiveLink != 999))]
+    #scenario_edges['projRteID'] = 0
 
     if config['update_network_from_projects']:
         logger.info('Start updating network from projects')
