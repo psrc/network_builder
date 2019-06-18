@@ -18,8 +18,9 @@ df_modeAttributes = pd.read_csv(os.path.join(data_path, 'modeAttributes.csv'))
 
 # Tolls
 df_tolls = pd.read_csv(os.path.join(data_path, 'modeTolls.csv'))
-df_tolls = df_tolls[config['toll_columns'] + config['dir_toll_columns']]
 df_tolls = df_tolls[df_tolls['ModelYear'] == model_year]
+df_tolls = df_tolls[config['toll_columns'] + config['dir_toll_columns']]
+
 
 # Edges
 gdf_TransRefEdges = gpd.read_file(os.path.join(data_path, 'TransRefEdges.shp'))

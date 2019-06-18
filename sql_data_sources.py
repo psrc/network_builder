@@ -81,8 +81,8 @@ df_modeAttributes = rd_sql(server, database, 'modeAttributes_evw', version, None
 
 # Tolls
 df_tolls = rd_sql(server, database, 'modeTolls_evw', version, None, None, None, False, epsg=epsg)
-df_tolls = df_tolls[config['toll_columns'] + config['dir_toll_columns']]
 df_tolls = df_tolls[df_tolls['InServiceDate'] == model_year]
+df_tolls = df_tolls[config['toll_columns'] + config['dir_toll_columns']]
 
 # Edges
 gdf_TransRefEdges = rd_sql(server, database, 'TransRefEdges_evw', version, None, None, None, True, epsg=epsg)
@@ -106,28 +106,31 @@ gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(gdf_TransitL
 
 ### Projects
 if config['update_network_from_projects']:
-    gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
-    #gdf_ProjectRoutes = rd_sql(server, database, 'ProjectRoutes_evw', version, None, 'version', [2018], True, epsg=epsg)
-    gdf_ProjectRoutes['FacilityType'] = gdf_ProjectRoutes['Change_Typ'].astype(int)
-else:
-    gdf_ProjectRoutes = None
+    #gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
+    gdf_ProjectRoutes = rd_sql(server, database, 'ProjectRoutes_evw', version, None, 'version', [2018], True, epsg=epsg)
+    gdf_ProjectRoutes['FacilityType'] = gdf_ProjectRoutes['Change_Type'].astype(int)
+    
+    #scenarios:
+    df_tblProjectsInScenarios = rd_sql(server, database, 'tblProjectsInScenarios_evw', version, None, 'ScenarioName', [config['scenario_name']], False, epsg=epsg)
+    gdf_ProjectRoutes = gdf_ProjectRoutes[gdf_ProjectRoutes['projID'].isin(df_tblProjectsInScenarios['projID'])]
 
-### tblLineProjects
-if config['update_network_from_projects']:
+    # project attributes
     df_tblLineProjects = rd_sql(server, database, 'tblLineProjects_evw', version, None, None, None, False, epsg=epsg)
     df_tblLineProjects = df_tblLineProjects[df_tblLineProjects.projRteID.isin(gdf_ProjectRoutes.projRteID)]
 
-# Point Events (Projects that change capacity of a Park and Ride)
-if config['update_network_from_projects']:
+    # point events (park and rides)
     df_evtPointProjectOutcomes = rd_sql(server, database, 'evtPointProjectOutcomes', version, None, None, None, False, epsg=epsg)
-else:
-    df_evtPointProjectOutcomes = None
 
-if config['update_network_from_projects']:
     gdf_ProjectRoutes = gdf_ProjectRoutes.merge(df_tblLineProjects, how = 'left', on = 'projRteID')
     gdf_ProjectRoutes = gdf_ProjectRoutes.loc[gdf_ProjectRoutes['InServiceDate'] <= config['model_year']]
+    # drop InServiceDate as it is on edges
+    gdf_ProjectRoutes.drop(['InServiceDate'], axis = 1, inplace = True)
 
-##gdf_ProjectRoutes = gdf_ProjectRoutes[gdf_ProjectRoutes.projRteID.isin(project_list)]
+else:
+    gdf_ProjectRoutes = None
+    df_tblProjectsInScenarios = None
+    df_evtPointProjectOutcomes = None
+
 
 ## Turns
 gdf_TurnMovements = rd_sql(server, database, 'TurnMovements_evw', version, None, None, None, True, epsg=epsg)

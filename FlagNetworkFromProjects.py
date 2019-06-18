@@ -71,7 +71,7 @@ class FlagNetworkFromProjects(object):
         node_list = self.route_edges.INode.tolist()
         node_list = list(set(node_list +
                              self.route_edges.JNode.tolist()))
-        return self.junctions_gdf[self.junctions_gdf.PSRCjunctI.isin
+        return self.junctions_gdf[self.junctions_gdf.PSRCjunctID.isin
                                   (node_list)]
 
     def _junctions_to_coords(self):
@@ -82,7 +82,7 @@ class FlagNetworkFromProjects(object):
 
         self.route_junctions
         return {x.geometry.coords[0]:
-                x.PSRCjunctI for x in self.route_junctions.itertuples()}
+                x.PSRCjunctID for x in self.route_junctions.itertuples()}
 
     def _edges_to_dict(self):
         '''
@@ -285,7 +285,7 @@ class FlagNetworkFromProjects(object):
             self.project_gdf, on='projRteID', how='left')
 
         scenario_edges = self.network_gdf[((
-            self.network_gdf.InServiceD <=
+            self.network_gdf.InServiceDate <=
             self.config['model_year']) &
             (self.network_gdf.ActiveLink > 0) &
             (self.network_gdf.ActiveLink != 999)) |
@@ -327,7 +327,7 @@ class FlagNetworkFromProjects(object):
         scenario_edges.reset_index(inplace=True)
         
         # Delete edges flagged for removal
-        self._logger.info('Removing %s edges deleted by projects' % (len(scenario_edges[scenario_edges['FacilityTy'] == 99])))
-        scenario_edges = scenario_edges.loc[scenario_edges['FacilityTy'] <> 99].copy()
+        self._logger.info('Removing %s edges deleted by projects' % (len(scenario_edges[scenario_edges['FacilityType'] == 99])))
+        scenario_edges = scenario_edges.loc[scenario_edges['FacilityType'] <> 99].copy()
 
         return scenario_edges

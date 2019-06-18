@@ -86,7 +86,7 @@ if __name__ == '__main__':
     start_time = datetime.datetime.now()
 
     logger.info('Starting data import')
-    from data_sources import *
+    from sql_data_sources import *
     logger.info('Finished data import')
 
     model_year = config['model_year']

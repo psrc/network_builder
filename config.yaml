@@ -1,8 +1,16 @@
 data_path : D:/stefan/GDB_Data/OSM_2040
 
-output_dir: demo_outputs
+server: SQL2016\DSAPROD
+
+database: OSMtest
+
+version: DBO.Stefan
+
+output_dir: outputs_2040
 
 model_year: 2040
+
+scenario_name: constrained_2040
 
 main_log_file : 'run_log'
 
@@ -35,6 +43,8 @@ transit_headway_mapper :
 crs:
   'init' : 'EPSG:2285'
 
+epsg: 2285
+
 reversibles:
   'AM' : [False, False]
   'MD' : [True, False]
@@ -54,7 +64,7 @@ dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLan
 'IJVDFunc', 'JIVDFunc', 'IJLaneCapGP', 'IJLaneCapHOV', 'JILaneCapGP', 'JILaneCapHOV', 'IJSideWalks', 
 'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK']
 
-toll_columns: ['PSRCEdgeID', 'ModelYear']  
+toll_columns: ['PSRCEdgeID']  
 
 dir_toll_columns : ['IJtollSOVAM', 
 'IJtollSOVMD', 'IJtollSOVPM', 'IJtollSOVEV', 'IJtollSOVNI', 'JItollSOVAM', 'JItollSOVMD', 'JItollSOVPM', 
@@ -71,7 +81,7 @@ dir_toll_columns : ['IJtollSOVAM',
 non_dir_columns : ['FacilityTy', 'NewFacilit', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
-project_update_columns : ['projRteID', 'Change_Typ', 'Modes', 'FacilityTy']
+project_update_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType']
 
 intermediate_keep_columns : ['PSRCEdgeID', 'FacilityTy', 'NewFacilit', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID', 'Processing_x']
 
