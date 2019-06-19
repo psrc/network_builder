@@ -35,7 +35,7 @@ class FlagNetworkFromProjects(object):
         edges = gpd.sjoin(self.network_gdf, buff_projects, how='inner',
                           op='within')
 
-        edges = edges.sort_values(by=['InServiceDate'], ascending=False)
+        edges = edges.sort_values(by=['InServiceDate_right'], ascending=False)
 
         edges['freq'] = edges.groupby(
             'PSRCEdgeID')['PSRCEdgeID'].transform('count')
@@ -95,12 +95,12 @@ class FlagNetworkFromProjects(object):
         for edge in self.route_edges.itertuples():
 
             # Oneway IJ or reversible
-            if edge.Oneway == 0 or edge.Oneway == 1:
+            if edge.Oneway_left == 0 or edge.Oneway_left == 1:
                 edge_dict[(edge.INode, edge.JNode)] = {'PSRCEdgeID':
                                                        edge.PSRCEdgeID,
                                                        'dir': 'IJ'}
             # Two way
-            elif edge.Oneway == 2:
+            elif edge.Oneway_left == 2:
                 edge_dict[(edge.INode, edge.JNode)] = {'PSRCEdgeID':
                                                        edge.PSRCEdgeID,
                                                        'dir': 'IJ'}
@@ -108,7 +108,7 @@ class FlagNetworkFromProjects(object):
                                                        edge.PSRCEdgeID,
                                                        'dir': 'JI'}
             # Oneway JI
-            elif edge.Oneway == 3:
+            elif edge.Oneway_left == 3:
                 edge_dict[(edge.JNode, edge.INode)] = {'PSRCEdgeID':
                                                        edge.PSRCEdgeID,
                                                        'dir': 'JI'}

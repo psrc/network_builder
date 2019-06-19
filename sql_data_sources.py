@@ -124,7 +124,7 @@ if config['update_network_from_projects']:
     gdf_ProjectRoutes = gdf_ProjectRoutes.merge(df_tblLineProjects, how = 'left', on = 'projRteID')
     gdf_ProjectRoutes = gdf_ProjectRoutes.loc[gdf_ProjectRoutes['InServiceDate'] <= config['model_year']]
     # drop InServiceDate as it is on edges
-    gdf_ProjectRoutes.drop(['InServiceDate'], axis = 1, inplace = True)
+    #gdf_ProjectRoutes.drop(['InServiceDate'], axis = 1, inplace = True)
 
 else:
     gdf_ProjectRoutes = None

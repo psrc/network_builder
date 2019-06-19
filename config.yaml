@@ -81,7 +81,7 @@ dir_toll_columns : ['IJtollSOVAM',
 non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
-project_update_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType']
+project_update_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway']
 
 intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID', 'Processing_x']
 
