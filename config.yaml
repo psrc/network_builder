@@ -53,7 +53,7 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityTy', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
   'NODE' : ['lr_walk']
 
 # Directional attributes used for project updates & network thinning.
@@ -78,18 +78,18 @@ dir_toll_columns : ['IJtollSOVAM',
 'JItollTrkHvyPM', 'JItollTrkHvyEV','JItollTrkHvyNI']
 
 # Non-Directional attributes used for networkt thnning.
-non_dir_columns : ['FacilityTy', 'NewFacilit', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
+non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
 project_update_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType']
 
-intermediate_keep_columns : ['PSRCEdgeID', 'FacilityTy', 'NewFacilit', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID', 'Processing_x']
+intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID', 'Processing_x']
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2','trkc3']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityTy', 'Processing_x', 'projRteID', 'CountID', 'CountyID']
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID']
 
-emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctI', 'lr_walk']
+emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk']
 
 
 # links with these modes use time, not speed limit. 
@@ -150,7 +150,7 @@ standard_links:
   vdf: IJVDFunc
   ul1: IJLaneCapGP
   ul2: IJSpeedLimit
-  ul3: NewFacilit
+  ul3: NewFacilityType
   toll1: IJtollSOV
   toll2: IJtollHOV2 
   toll3: IJtollHOV3

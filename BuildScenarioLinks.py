@@ -48,7 +48,7 @@ class BuildScenarioLinks(object):
         network.reset_index(inplace=True)
 
         # configure HOV attributes
-        hov_edges = network[network['FacilityTy'] == 999]
+        hov_edges = network[network['FacilityType'] == 999]
         hov_edges = self._configure_hov_attributes(hov_edges)
         network.update(hov_edges)
 
@@ -68,13 +68,13 @@ class BuildScenarioLinks(object):
         network.reset_index(drop = True, inplace=True)
         
         # configure weave link attributes
-        weave_links = network[network['FacilityTy']==98]
+        weave_links = network[network['FacilityType']==98]
         weave_links = self._configure_weave_link_attributes(weave_links, self.config['weave_links'])
         network.update(weave_links)
 
         # cpnfigure HOT lane tolls
         for k, v in self.config['hot_tolls'].iteritems():
-            hot_links = network[(network['IJLanesHOV' + self.time_period] == k) & (network['FacilityTy'] == 999)]
+            hot_links = network[(network['IJLanesHOV' + self.time_period] == k) & (network['FacilityType'] == 999)]
             hot_links = self._configure_hot_lane_tolls(hot_links, v)
             network.update(hot_links)
 
@@ -90,7 +90,7 @@ class BuildScenarioLinks(object):
 
     def _update_hov_oneway(self, network):
         # A two way GP lane does not always have two way GP
-        hov_edges = network[network['FacilityTy'] == 999]
+        hov_edges = network[network['FacilityType'] == 999]
         # One way IJ HOV:
         hov_edges['Oneway'] = np.where((hov_edges['Oneway']==2) & (hov_edges['IJLanesHOV' + self.time_period] > 0) & (hov_edges['JILanesHOV' + self.time_period] == 0), 0, hov_edges['Oneway'])
         # One way JI HOV
@@ -149,7 +149,7 @@ class BuildScenarioLinks(object):
 
 
     def _create_reverse_walk_links(self, network):
-        reverse_walk_links = network[network.NewFacilit.isin(self.config['reverse_walk_link_facility_types'])]
+        reverse_walk_links = network[network.NewFacilityType.isin(self.config['reverse_walk_link_facility_types'])]
         reverse_walk_links = reverse_walk_links[(reverse_walk_links['Oneway'] == 0) | (reverse_walk_links['Oneway'] == 1)]
         flipped_geom = reverse_walk_links.geometry.apply(self._flip_edges)
         reverse_walk_links.geometry.update(flipped_geom)
@@ -256,7 +256,7 @@ class BuildScenarioLinks(object):
 
     def _configure_transit_links(self, edges):
         edges.ul2 = edges.ul2.astype(float)
-        edges.ul2 = np.where(edges['FacilityTy'].isin(self.config['link_time_facility_types']), edges.Processing_x/1000.0, edges.ul2)
+        edges.ul2 = np.where(edges['FacilityType'].isin(self.config['link_time_facility_types']), edges.Processing_x/1000.0, edges.ul2)
         return edges
 
     def _validate_network(self, edges):

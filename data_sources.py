@@ -49,7 +49,7 @@ gdf_TransitPoints.crs = config['crs']
 ### Projects
 if config['update_network_from_projects']:
     gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
-    gdf_ProjectRoutes['FacilityTy'] = gdf_ProjectRoutes['Change_Typ'].astype(int)
+    gdf_ProjectRoutes['FacilityType'] = gdf_ProjectRoutes['Change_Typ'].astype(int)
     gdf_ProjectRoutes.crs = config['crs']
 else:
     gdf_ProjectRoutes = None

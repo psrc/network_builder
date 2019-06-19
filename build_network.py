@@ -39,16 +39,16 @@ def nodes_from_turns(turns, edges):
     return list(set(edges.INode.tolist() + edges.JNode.tolist()))
 
 def nodes_from_transit(transit_points):
-    return list(set(transit_points.PSRCJunctI.tolist()))
+    return list(set(transit_points.PSRCJunctID.tolist()))
 
 
 def nodes_from_centroids(junctions):
-    centroid_junctions = junctions[junctions.EMME2nodeI > 0]
-    return centroid_junctions.PSRCjunctI.tolist()
+    centroid_junctions = junctions[junctions.EMME2nodeID > 0]
+    return centroid_junctions.PSRCjunctID.tolist()
 
 def retain_junctions(junctions):
-    retain_junctions = junctions[junctions.JunctionTy == 10]
-    return retain_junctions.PSRCjunctI.tolist()
+    retain_junctions = junctions[junctions.JunctionType == 10]
+    return retain_junctions.PSRCjunctID.tolist()
 
 
 def nodes_from_edges(list_of_edges, edges):
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     turn_list = []
     for turn in gdf_TurnMovements.iterrows():
         turn = turn[1]
-        j_node = turn.PSRCJunctI + config['node_offset']
+        j_node = turn.PSRCJunctID + config['node_offset']
         from_edge = scenario_edges[scenario_edges.PSRCEdgeID == turn.FrEdgeID]
         if from_edge.empty:
             logger.warning("Warning: From edge from Turn %s not found!" % (turn.TurnID))
@@ -225,8 +225,8 @@ if __name__ == '__main__':
                                  
   
             # Do Transit Stuff here
-            gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctI + config['node_offset']
-            model_links['weight'] = np.where(model_links['FacilityTy'] == 999, .5 * model_links.length, model_links.length)
+            gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctID + config['node_offset']
+            model_links['weight'] = np.where(model_links['FacilityType'] == 999, .5 * model_links.length, model_links.length)
      
             route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
             if route_id_list:

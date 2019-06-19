@@ -141,4 +141,5 @@ gdf_Junctions = rd_sql(server, database, 'TransRefJunctions_evw', version, None,
 
 # Transit Frequencies:
 if config['build_transit_headways']:
-    df_transit_frequencies = pd.read_csv(os.path.join(data_path, 'transitFrequency.csv'))
+    #df_transit_frequencies = pd.read_csv(os.path.join(data_path, 'transitFrequency.csv'))
+    df_transit_frequencies = rd_sql(server, database, 'transitFrequency_evw', version, None, None, None, False, epsg=epsg)
