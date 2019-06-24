@@ -1,0 +1,25 @@
+links:
+  id: PSRCEdgeID
+  project_id: projRteID
+  project_start_year: InServiceD
+  i_node: NewINode
+  j_node: NewJNode
+  active_link_flag: ActiveLink
+  id: PSRCEdgeID
+  facility_type: FacilityTy
+
+nodes:
+  id: EMME2nodeI
+
+junctions: 
+  id: PSRCjunctID
+  type: JunctionType
+
+turns:
+  id: TurnID
+  junction: PSRCJunctI
+  from_link_id: FrEdgeID
+  to_link_id: ToEdgeID
+
+transit:
+  node_id: PSRCJunctI
