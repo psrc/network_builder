@@ -35,7 +35,7 @@ class FlagNetworkFromProjects(object):
         edges = gpd.sjoin(self.network_gdf, buff_projects, how='inner',
                           op='within')
 
-        edges = edges.sort_values(by=['InServiceDate'], ascending=False)
+        edges = edges.sort_values(by=['InServiceDate_right'], ascending=False)
 
         edges['freq'] = edges.groupby(
             'PSRCEdgeID')['PSRCEdgeID'].transform('count')
@@ -71,7 +71,7 @@ class FlagNetworkFromProjects(object):
         node_list = self.route_edges.INode.tolist()
         node_list = list(set(node_list +
                              self.route_edges.JNode.tolist()))
-        return self.junctions_gdf[self.junctions_gdf.PSRCjunctI.isin
+        return self.junctions_gdf[self.junctions_gdf.PSRCjunctID.isin
                                   (node_list)]
 
     def _junctions_to_coords(self):
@@ -82,7 +82,7 @@ class FlagNetworkFromProjects(object):
 
         self.route_junctions
         return {x.geometry.coords[0]:
-                x.PSRCjunctI for x in self.route_junctions.itertuples()}
+                x.PSRCjunctID for x in self.route_junctions.itertuples()}
 
     def _edges_to_dict(self):
         '''
@@ -95,12 +95,12 @@ class FlagNetworkFromProjects(object):
         for edge in self.route_edges.itertuples():
 
             # Oneway IJ or reversible
-            if edge.Oneway == 0 or edge.Oneway == 1:
+            if edge.Oneway_left == 0 or edge.Oneway_left == 1:
                 edge_dict[(edge.INode, edge.JNode)] = {'PSRCEdgeID':
                                                        edge.PSRCEdgeID,
                                                        'dir': 'IJ'}
             # Two way
-            elif edge.Oneway == 2:
+            elif edge.Oneway_left == 2:
                 edge_dict[(edge.INode, edge.JNode)] = {'PSRCEdgeID':
                                                        edge.PSRCEdgeID,
                                                        'dir': 'IJ'}
@@ -108,7 +108,7 @@ class FlagNetworkFromProjects(object):
                                                        edge.PSRCEdgeID,
                                                        'dir': 'JI'}
             # Oneway JI
-            elif edge.Oneway == 3:
+            elif edge.Oneway_left == 3:
                 edge_dict[(edge.JNode, edge.INode)] = {'PSRCEdgeID':
                                                        edge.PSRCEdgeID,
                                                        'dir': 'JI'}
@@ -285,7 +285,7 @@ class FlagNetworkFromProjects(object):
             self.project_gdf, on='projRteID', how='left')
 
         scenario_edges = self.network_gdf[((
-            self.network_gdf.InServiceD <=
+            self.network_gdf.InServiceDate <=
             self.config['model_year']) &
             (self.network_gdf.ActiveLink > 0) &
             (self.network_gdf.ActiveLink != 999)) |
@@ -327,7 +327,7 @@ class FlagNetworkFromProjects(object):
         scenario_edges.reset_index(inplace=True)
         
         # Delete edges flagged for removal
-        self._logger.info('Removing %s edges deleted by projects' % (len(scenario_edges[scenario_edges['FacilityTy'] == 99])))
-        scenario_edges = scenario_edges.loc[scenario_edges['FacilityTy'] <> 99].copy()
+        self._logger.info('Removing %s edges deleted by projects' % (len(scenario_edges[scenario_edges['FacilityType'] == 99])))
+        scenario_edges = scenario_edges.loc[scenario_edges['FacilityType'] <> 99].copy()
 
         return scenario_edges

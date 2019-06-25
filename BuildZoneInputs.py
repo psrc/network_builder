@@ -21,7 +21,7 @@ class BuildZoneInputs(object):
         zone_nodes_df['XCoord'] = zone_nodes_df.geometry.x
         zone_nodes_df['YCoord'] = zone_nodes_df.geometry.y
         if self.config['update_network_from_projects']:
-            zone_nodes_df.set_index('PSRCjunctI', inplace = True)
+            zone_nodes_df.set_index('PSRCjunctID', inplace = True)
             p_r_projects = self.project_gdf[self.project_gdf['withEvents'] == 2]['projRteID'].tolist()
             p_r_projects_df = self.point_events_df.loc[self.point_events_df['projRteID'].isin(p_r_projects)].copy()
             p_r_projects_df.set_index('PSRCJunctID', inplace =  True)

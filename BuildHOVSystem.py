@@ -54,7 +54,7 @@ class BuildHOVSystem(object):
         # Update the the geometry column
         hov_edges.update(shift_edges_geom)
         # Hov_edges = _update_hov_ij_nodes(self, hov_edges)
-        hov_edges['FacilityTy'] = 999
+        hov_edges['FacilityType'] = 999
         return hov_edges
 
     def _get_hov_junctions(self):
@@ -66,7 +66,7 @@ class BuildHOVSystem(object):
         keep_nodes = list(set(self.hov_edges['INode'].tolist() +
                               self.hov_edges['JNode'].tolist()))
 
-        hov_junctions = self.junctions_gdf[self.junctions_gdf['PSRCjunctI'].
+        hov_junctions = self.junctions_gdf[self.junctions_gdf['PSRCjunctID'].
                                            isin(keep_nodes)]
 
         shift_junctions = hov_junctions.geometry.apply(
@@ -74,8 +74,8 @@ class BuildHOVSystem(object):
 
         hov_junctions.update(shift_junctions)
         hov_junctions['ScenarioNodeID'] = range(
-            self.junctions_gdf.ScenarioNodeID.max() + 1,
-            self.junctions_gdf.ScenarioNodeID.max() + len(hov_junctions) + 1)
+            self.junctions_gdf.ScenarioNodeID.max().astype(int) + 1,
+            self.junctions_gdf.ScenarioNodeID.max().astype(int) + len(hov_junctions) + 1)
 
         # Update edge I & J nodes
         self._update_hov_ij_nodes(hov_junctions)
@@ -87,7 +87,7 @@ class BuildHOVSystem(object):
         new HOV edges with the id of the node/junction
         at their end points.
         '''
-        recode_dict = dict(zip(hov_junctions['PSRCjunctI'],
+        recode_dict = dict(zip(hov_junctions['PSRCjunctID'],
                                hov_junctions['ScenarioNodeID']))
 
         # First set new to old
@@ -105,7 +105,7 @@ class BuildHOVSystem(object):
         and Manged lane systesm.
         '''
         # Start with HOV junctions
-        weave_edges = self.hov_junctions[['PSRCjunctI',
+        weave_edges = self.hov_junctions[['PSRCjunctID',
                                           'geometry', 'ScenarioNodeID']]
 
         # JNode is on the HOV end, INode is on the GP end
@@ -113,7 +113,7 @@ class BuildHOVSystem(object):
         weave_edges.drop('ScenarioNodeID', 1, inplace=True)
         # Left join gives the GP counterpoint to the HOV node
         weave_edges = weave_edges.merge(self.junctions_gdf,
-                                        on='PSRCjunctI', how='left')
+                                        on='PSRCjunctID', how='left')
 
         # Create line geometry using the GP & HOV Junctions
         weave_edges['geometry'] = weave_edges.apply(
@@ -121,7 +121,7 @@ class BuildHOVSystem(object):
         weave_edges.drop('geometry_y', 1, inplace=True)
         weave_edges.drop('geometry_x', 1, inplace=True)
         weave_edges['NewINode'] = weave_edges['ScenarioNodeID']
-        weave_edges['FacilityTy'] = 98
+        weave_edges['FacilityType'] = 98
         weave_edges['Oneway'] = 2
         weave_edges = gpd.GeoDataFrame(weave_edges)
         return weave_edges

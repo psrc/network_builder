@@ -246,19 +246,19 @@ class ThinNetwork(object):
                                        'JNode'].tolist()))
 
         thinned_junctions = self.junctions_gdf[
-            self.junctions_gdf['PSRCjunctI'].isin(keep_nodes)]
+            self.junctions_gdf['PSRCjunctID'].isin(keep_nodes)]
 
         thinned_junctions['ScenarioNodeID'] = thinned_junctions[
-            'PSRCjunctI'] + self.config['node_offset']
+            'PSRCjunctID'] + self.config['node_offset']
 
         thinned_junctions['ScenarioNodeID'] = np.where(
-            thinned_junctions['EMME2nodeI'
+            thinned_junctions['EMME2nodeID'
                               ] > 0, thinned_junctions[
-                                  'EMME2nodeI'], thinned_junctions[
+                                  'EMME2nodeID'], thinned_junctions[
                                       'ScenarioNodeID'])
         # Now make a map of old to new
         recode_dict = pd.Series(thinned_junctions.ScenarioNodeID.values,
-                                thinned_junctions.PSRCjunctI.values).to_dict()
+                                thinned_junctions.PSRCjunctID.values).to_dict()
         # Recode_edges
         self.thinned_edges_gdf['NewINode'] = self.thinned_edges_gdf['INode']
         self.thinned_edges_gdf['NewJNode'] = self.thinned_edges_gdf['JNode']

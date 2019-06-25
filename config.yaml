@@ -1,8 +1,16 @@
 data_path : D:/network_builder/OSM_2040
 
-output_dir: demo_outputs
+server: SQL2016\DSAPROD
+
+database: OSMtest
+
+version: DBO.Stefan
+
+output_dir: outputs_2040
 
 model_year: 2040
+
+scenario_name: constrained_2040
 
 main_log_file : 'run_log'
 
@@ -35,6 +43,8 @@ transit_headway_mapper :
 crs:
   'init' : 'EPSG:2285'
 
+epsg: 2285
+
 reversibles:
   'AM' : [False, False]
   'MD' : [True, False]
@@ -43,7 +53,7 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityTy', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
   'NODE' : ['lr_walk']
 
 taz_index_columns: ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External']
@@ -57,7 +67,7 @@ dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLan
 'IJVDFunc', 'JIVDFunc', 'IJLaneCapGP', 'IJLaneCapHOV', 'JILaneCapGP', 'JILaneCapHOV', 'IJSideWalks', 
 'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK']
 
-toll_columns: ['PSRCEdgeID', 'ModelYear']  
+toll_columns: ['PSRCEdgeID']  
 
 dir_toll_columns : ['IJtollSOVAM', 
 'IJtollSOVMD', 'IJtollSOVPM', 'IJtollSOVEV', 'IJtollSOVNI', 'JItollSOVAM', 'JItollSOVMD', 'JItollSOVPM', 
@@ -71,18 +81,18 @@ dir_toll_columns : ['IJtollSOVAM',
 'JItollTrkHvyPM', 'JItollTrkHvyEV','JItollTrkHvyNI']
 
 # Non-Directional attributes used for networkt thnning.
-non_dir_columns : ['FacilityTy', 'NewFacilit', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
+non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
-project_update_columns : ['projRteID', 'Change_Typ', 'Modes', 'FacilityTy']
+project_update_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway']
 
-intermediate_keep_columns : ['PSRCEdgeID', 'FacilityTy', 'NewFacilit', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID', 'Processing_x']
+intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID', 'Processing_x']
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2','trkc3']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityTy', 'Processing_x', 'projRteID', 'CountID', 'CountyID']
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID']
 
-emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctI', 'lr_walk']
+emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk']
 
 
 # links with these modes use time, not speed limit. 
@@ -143,7 +153,7 @@ standard_links:
   vdf: IJVDFunc
   ul1: IJLaneCapGP
   ul2: IJSpeedLimit
-  ul3: NewFacilit
+  ul3: NewFacilityType
   toll1: IJtollSOV
   toll2: IJtollHOV2 
   toll3: IJtollHOV3
