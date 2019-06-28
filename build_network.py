@@ -12,6 +12,7 @@ from FlagNetworkFromProjects import *
 from ThinNetwork import *
 from BuildHOVSystem import *
 from BuildScenarioLinks import *
+from BuildBikeNetwork import *
 from ConfigureTransitSegments import *
 from EmmeProject import *
 from EmmeNetwork import *
@@ -108,6 +109,9 @@ if __name__ == '__main__':
 	                                & (gdf_TransRefEdges[edges_cols['active_link_flag']] > 0) 
 	                                & (gdf_TransRefEdges[edges_cols['active_link_flag']] != 999))]
 	    scenario_edges[network_config['edges']['project_id']] = 0
+
+    # Export bike network (before or after thinning??)
+
 
     logger.info('Start network thinning')
     start_edge_count = len(scenario_edges)
@@ -207,8 +211,14 @@ if __name__ == '__main__':
 	        model_links = scenario_links.full_network
 	        model_nodes = scenario_links.junctions
 
-	        # Use AM network to create zone, park and ride files   
+	        # Use AM network to create zone, park and ride files, and bike network   
 	        if time_period == 'AM':
+
+	            bike_links = BuildBikeNetwork(model_links, config)
+                # Export bike network as separate network?
+                # Add to model_links as an extra attribute
+                # model_links['upslope'] = bike_links['upslope']
+
 	            zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
 	            zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
 	            path = os.path.join(build_file_folder, 'TAZIndex.txt')

@@ -6,9 +6,9 @@ database: OSMtest
 
 version: DBO.Stefan
 
-output_dir: outputs_2040
+output_dir: outputs_2040_brice
 
-model_year: 2040
+model_year: 2018
 
 scenario_name: constrained_2040
 
@@ -20,7 +20,7 @@ node_offset: 0
 
 max_regular_zone: 3700
 
-update_network_from_projects : True 
+update_network_from_projects : False 
 
 number_of_pools: 12
 
@@ -80,7 +80,7 @@ dir_toll_columns : ['IJtollSOVAM',
 'IJtollTrkHvyAM', 'IJtollTrkHvyMD', 'IJtollTrkHvyPM','IJtollTrkHvyEV', 'IJtollTrkHvyNI', 'JItollTrkHvyAM', 'JItollTrkHvyMD', 
 'JItollTrkHvyPM', 'JItollTrkHvyEV','JItollTrkHvyNI']
 
-# Non-Directional attributes used for networkt thnning.
+# Non-Directional attributes used for network thinning.
 non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
@@ -196,7 +196,7 @@ standard_facility_types : [1, 2, 3, 4, 5, 6, 7, 8, 9]
 # reduce errors reported in log file. 
 project_buffer_dist : 1
 
-# How far to shift HOV lanes from gP lanes:
+# How far to shift HOV lanes from GP lanes:
 hov_shift_dist : 1.906090351
 
 #build_turns: False    
@@ -211,3 +211,7 @@ coord_unit_length: 0.0001894
 unit_of_length: 'mi'
 modes_file: modes.txt
 transit_vehicle_file: vehicles.txt
+
+# Bike Network
+elev_conversion: 3.28084    # Convert raster elevation from meters to feet
+raster_file_path: 'D:/network_builder/import_from_sql/dem30m1.tif'
