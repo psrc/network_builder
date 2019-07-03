@@ -44,6 +44,7 @@ class BuildScenarioLinks(object):
         # create reverse links for two way streets
         reverse_links = self._create_reverse_links(network)
         reverse_links = self._configure_standard_attributes(reverse_links, self.config['standard_links'])
+        reverse_links['_direction'] = 'ji'
         network = pd.concat([network, reverse_links])
         network.reset_index(inplace=True)
 
@@ -72,11 +73,17 @@ class BuildScenarioLinks(object):
         weave_links = self._configure_weave_link_attributes(weave_links, self.config['weave_links'])
         network.update(weave_links)
 
-        # cpnfigure HOT lane tolls
+        # configure HOT lane tolls
         for k, v in self.config['hot_tolls'].iteritems():
             hot_links = network[(network['IJLanesHOV' + self.time_period] == k) & (network['FacilityType'] == 999)]
             hot_links = self._configure_hot_lane_tolls(hot_links, v)
             network.update(hot_links)
+
+        # Export bike facility type
+        # When oneway == 0, take IJ bike lanes; all oneway JI lanes have been flipped to IJ
+        network.loc[network['Oneway'] == 0, 'bkfac'] = network.loc[network['Oneway'] == 0, 'IJBikeLanes']
+
+        # For twoway lanes (Oneway==2)
 
         network = network[self.config['emme_link_columns'] + self.config['additional_keep_columns']]
         network.i = network.i.astype(int)
@@ -155,7 +162,7 @@ class BuildScenarioLinks(object):
         reverse_walk_links.geometry.update(flipped_geom)
         cols = self._switch_attributes_dict()
         reverse_walk_links = reverse_walk_links.rename(columns = cols)
-        # set these these all to oneway IJ-dont want them to get picked up by a JI query later on 
+        # set these all to oneway IJ-dont want them to get picked up by a JI query later on 
         reverse_walk_links['Oneway'] = 0
         return reverse_walk_links
         

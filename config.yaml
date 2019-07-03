@@ -25,7 +25,7 @@ update_network_from_projects : False
 number_of_pools: 12
 
 
-time_periods: ['AM', 'MD', 'PM', 'EV', 'NI']
+time_periods: ['AM','MD','PM','EV','NI']
 
 transit_headway_mapper : 
   'hdw_5to6' : ['hour_5']
@@ -90,9 +90,9 @@ intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'L
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2','trkc3']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID']
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID','IJBikeLanes']
 
-emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk']
+emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk',]
 
 
 # links with these modes use time, not speed limit. 

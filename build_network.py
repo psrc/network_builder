@@ -5,8 +5,9 @@ import os
 import sys
 import errno
 import numpy as np
-from shapely.geometry import LineString
-from shapely.geometry import Point
+from shapely.geometry import LineString, Point
+import rasterio
+from rasterstats import zonal_stats, point_query
 import yaml
 from FlagNetworkFromProjects import *
 from ThinNetwork import *
@@ -26,6 +27,7 @@ from networkx.algorithms.components import *
 import collections
 import multiprocessing as mp
 import build_transit_segments_parallel
+import build_bike_network_parallel
 import collections
 import inro.emme.database.emmebank as _eb
 import inro.emme.desktop.app as app
@@ -211,13 +213,36 @@ if __name__ == '__main__':
 	        model_links = scenario_links.full_network
 	        model_nodes = scenario_links.junctions
 
+	        model_links = model_links.rename(columns={'IJBikeLanes': 'bkfac'})
+
 	        # Use AM network to create zone, park and ride files, and bike network   
 	        if time_period == 'AM':
 
-	            bike_links = BuildBikeNetwork(model_links, config)
-                # Export bike network as separate network?
-                # Add to model_links as an extra attribute
-                # model_links['upslope'] = bike_links['upslope']
+                # Build bike network
+
+                # FIX: filter out non-bikeable links (freeways, etc.) to decrease runtime
+                # Should we also filter out connectors? 
+                # Possible to run rasterstats as a multiprocess?
+	            print 'extracting point elevation from raster'
+	            logger.info('Elevation raster start')
+	            pts = np.array(point_query(model_links, config['raster_file_path']))
+	            logger.info('Elevation raster done')
+	            elev_dict = {}
+	            for i in xrange(len(pts)):
+	                id = model_links.iloc[i].id
+	                elev_dict[id] = pts[i]
+
+                # Add an index
+	            link_ids = model_links['id'].tolist()
+	            pool = mp.Pool(config['number_of_pools'], build_bike_network_parallel.init_pool, 
+                                [model_links, elev_dict])
+	            avg_upslope = pool.map(build_bike_network_parallel.calc_slope_parallel, link_ids)
+
+	            model_links['avg_upslope'] = avg_upslope
+	            logger.info('Writing bikes to file')
+	            model_links[['id','avg_upslope']].to_csv(time_period+'_slope_network.csv', index=False)
+
+	            logger.info('Bike work done')
 
 	            zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
 	            zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
@@ -225,7 +250,6 @@ if __name__ == '__main__':
 	            zonal_inputs_tuple[0].to_csv(path, columns = config['taz_index_columns'], index = False, sep='\t')
 	            path = os.path.join(build_file_folder, 'p_r_nodes.csv')
 	            zonal_inputs_tuple[1].to_csv(path, columns = config['park_and_ride_columns'], index = False) 
-
 
 	            headways = TransitHeadways(gdf_TransitLines, df_transit_frequencies, config)
 	            headways_df = headways.build_headways()
