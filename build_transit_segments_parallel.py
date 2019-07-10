@@ -5,9 +5,6 @@ import networkx as nx
 import log_controller
 
 def trace_transit_route(route_id):
-    #global global_edges
-    #global global_transit_lines
-    #global global_transit_points
     
     row_list = []
     line = global_transit_lines[global_transit_lines.LineID == route_id]

@@ -13,7 +13,6 @@ from FlagNetworkFromProjects import *
 from ThinNetwork import *
 from BuildHOVSystem import *
 from BuildScenarioLinks import *
-from BuildBikeNetwork import *
 from ConfigureTransitSegments import *
 from EmmeProject import *
 from EmmeNetwork import *
@@ -95,11 +94,6 @@ if __name__ == '__main__':
     logger.info('Finished data import')
 
     model_year = config['model_year']
-
-    #scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges[edges_cols['project_start_year']] <= config['model_year']) 
-	   #                                 & (gdf_TransRefEdges[edges_cols['active_link_flag']] > 0) 
-	   #                                 & (gdf_TransRefEdges[edges_cols['active_link_flag']] != 999))]
-    #scenario_edges[edges_cols['project_id']] = 0
 
     if config['update_network_from_projects']:
 	    logger.info('Start updating network from projects')
@@ -219,28 +213,32 @@ if __name__ == '__main__':
 	        if time_period == 'AM':
 
                 # Build bike network
+                # Filter bikeable links (remove freeways, ramps, transit-only facilities, centroid connectors)
+	            bike_network = model_links[model_links['FacilityType'].isin([5,6,7,8,9,10,11])]
 
-                # FIX: filter out non-bikeable links (freeways, etc.) to decrease runtime
-                # Should we also filter out connectors? 
-                # Possible to run rasterstats as a multiprocess?
-	            print 'extracting point elevation from raster'
+                # Intersect elevation raster with all point features along each link
 	            logger.info('Elevation raster start')
-	            pts = np.array(point_query(model_links, config['raster_file_path']))
+	            pts = np.array(point_query(bike_network, config['raster_file_path']))
 	            logger.info('Elevation raster done')
 	            elev_dict = {}
 	            for i in xrange(len(pts)):
-	                id = model_links.iloc[i].id
+	                id = bike_network.iloc[i].id
 	                elev_dict[id] = pts[i]
 
-                # Add an index
-	            link_ids = model_links['id'].tolist()
-	            pool = mp.Pool(config['number_of_pools'], build_bike_network_parallel.init_pool, 
-                                [model_links, elev_dict])
+                # Calculate slope between points for all links
+                # Each link is composed of multiple points, depending on line geometry and length
+                # Slope is calculated in direction of link & only considers increases in slope
+	            link_ids = bike_network['id'].tolist()
+	            num_processes = mp.cpu_count()
+	            pool = mp.Pool(num_processes, build_bike_network_parallel.init_pool, 
+                                [bike_network, elev_dict])
 	            avg_upslope = pool.map(build_bike_network_parallel.calc_slope_parallel, link_ids)
 
-	            model_links['avg_upslope'] = avg_upslope
-	            logger.info('Writing bikes to file')
-	            model_links[['id','avg_upslope']].to_csv(time_period+'_slope_network.csv', index=False)
+                # Slope is the average increase in slope across the link (upslope)
+	            bike_network['upslp'] = avg_upslope
+	            logger.info('Writing bike slope to file')
+	            path = os.path.join(config['output_dir'], 'shapefiles', time_period, 'bike_slope.csv')
+	            bike_network[['id','upslp']].to_csv(path, index=False)
 
 	            logger.info('Bike work done')
 
@@ -256,9 +254,13 @@ if __name__ == '__main__':
 	            path = os.path.join(build_file_folder, 'headways.csv')
 	            headways_df.to_csv(path)
 
-	        # Build Transit Segments and Lines
+	        # Attach slope for matching links
+	        model_links['upslp'] = 0
+	        model_links.update(bike_network[['id','upslp']])
+                
+            # Build Transit Segments and Lines
 	        transit_cols = network_config['transit_points']
-	        gdf_TransitPoints['newNodeID'] = gdf_TransitPoints[transit_cols['id']] + config['node_offset']
+	        gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints[transit_cols['id']] + config['node_offset']
 	        model_links['weight'] = np.where(model_links[network_config['edges']['facility_type']] == 999, 0.5 * model_links.length, model_links.length)
 	     
 	        route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()

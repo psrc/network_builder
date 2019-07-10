@@ -6,13 +6,13 @@ database: OSMtest
 
 version: DBO.Stefan
 
-output_dir: outputs_2040_brice
+output_dir: D:/network_builder/outputs_2040_brice
 
 model_year: 2018
 
 scenario_name: constrained_2040
 
-main_log_file : 'run_log'
+main_log_file : 'run_log.txt'
 
 max_zone_number: 4000
 
@@ -25,7 +25,7 @@ update_network_from_projects : False
 number_of_pools: 12
 
 
-time_periods: ['AM','MD','PM','EV','NI']
+time_periods: ['AM','MD']
 
 transit_headway_mapper : 
   'hdw_5to6' : ['hour_5']
@@ -53,7 +53,7 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3','upslp']
   'NODE' : ['lr_walk']
 
 taz_index_columns: ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External']
