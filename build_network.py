@@ -207,40 +207,42 @@ if __name__ == '__main__':
 	        model_links = scenario_links.full_network
 	        model_nodes = scenario_links.junctions
 
+            # attach bike facility data and initialize slope
 	        model_links = model_links.rename(columns={'IJBikeLanes': 'bkfac'})
+	        model_links['upslp'] = 0
 
 	        # Use AM network to create zone, park and ride files, and bike network   
 	        if time_period == 'AM':
 
-                # Build bike network
-                # Filter bikeable links (remove freeways, ramps, transit-only facilities, centroid connectors)
-	            bike_network = model_links[model_links['FacilityType'].isin([5,6,7,8,9,10,11])]
+	            if config['build_bike_network']:
+                    # Filter bikeable links (remove freeways, ramps, transit-only facilities, centroid connectors)
+	                bike_network = model_links[model_links['FacilityType'].isin(config['bike_facility_types'])]
 
-                # Intersect elevation raster with all point features along each link
-	            logger.info('Elevation raster start')
-	            pts = np.array(point_query(bike_network, config['raster_file_path']))
-	            logger.info('Elevation raster done')
-	            elev_dict = {}
-	            for i in xrange(len(pts)):
-	                id = bike_network.iloc[i].id
-	                elev_dict[id] = pts[i]
+                    # Intersect elevation raster with all point features along each link
+	                logger.info('Elevation raster start')
+	                pts = np.array(point_query(bike_network, config['raster_file_path']))
+	                logger.info('Elevation raster done')
+	                elev_dict = {}
+	                for i in xrange(len(pts)):
+	                    id = bike_network.iloc[i].id
+	                    elev_dict[id] = pts[i]
 
-                # Calculate slope between points for all links
-                # Each link is composed of multiple points, depending on line geometry and length
-                # Slope is calculated in direction of link & only considers increases in slope
-	            link_ids = bike_network['id'].tolist()
-	            num_processes = mp.cpu_count()
-	            pool = mp.Pool(num_processes, build_bike_network_parallel.init_pool, 
-                                [bike_network, elev_dict])
-	            avg_upslope = pool.map(build_bike_network_parallel.calc_slope_parallel, link_ids)
+                    # Calculate slope between points for all links
+                    # Each link is composed of multiple points, depending on line geometry and length
+                    # Slope is calculated in direction of link & only considers increases in slope
+	                link_ids = bike_network['id'].tolist()
+	                num_processes = mp.cpu_count()
+	                pool = mp.Pool(num_processes, build_bike_network_parallel.init_pool, 
+                                    [bike_network, elev_dict])
+	                avg_upslope = pool.map(build_bike_network_parallel.calc_slope_parallel, link_ids)
 
-                # Slope is the average increase in slope across the link (upslope)
-	            bike_network['upslp'] = avg_upslope
-	            logger.info('Writing bike slope to file')
-	            path = os.path.join(config['output_dir'], 'shapefiles', time_period, 'bike_slope.csv')
-	            bike_network[['id','upslp']].to_csv(path, index=False)
+                    # Slope is the average increase in slope across the link (upslope)
+	                bike_network['upslp'] = avg_upslope
+	                logger.info('Writing bike slope to file')
+	                path = os.path.join(config['output_dir'], 'shapefiles', time_period, 'bike_slope.csv')
+	                bike_network[['id','upslp']].to_csv(path, index=False)
 
-	            logger.info('Bike work done')
+	                logger.info('Bike work done')
 
 	            zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
 	            zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
@@ -254,9 +256,7 @@ if __name__ == '__main__':
 	            path = os.path.join(build_file_folder, 'headways.csv')
 	            headways_df.to_csv(path)
 
-	        # Attach slope for matching links
-	        model_links['upslp'] = 0
-	        model_links.update(bike_network[['id','upslp']])
+
                 
             # Build Transit Segments and Lines
 	        transit_cols = network_config['transit_points']
@@ -288,6 +288,10 @@ if __name__ == '__main__':
 	            if config['save_network_files'] :
 	                transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
 	        
+            # Attach slope for matching links
+	        if config['build_bike_network']:
+	            model_links.update(bike_network[['id','upslp']])
+
 	        if config['save_network_files'] :
 	            model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), driver='ESRI Shapefile')
 	            model_links.to_file(os.path.join(dir, time_period + '_edges.shp'),  driver='ESRI Shapefile')
