@@ -112,7 +112,7 @@ if config['update_network_from_projects']:
     
     #scenarios:
     df_tblProjectsInScenarios = rd_sql(server, database, 'tblProjectsInScenarios_evw', version, None, 'ScenarioName', [config['scenario_name']], False, epsg=epsg)
-    gdf_ProjectRoutes = gdf_ProjectRoutes[gdf_ProjectRoutes['projID'].isin(df_tblProjectsInScenarios['projID'])]
+    gdf_ProjectRoutes = gdf_ProjectRoutes[gdf_ProjectRoutes['intProjID'].isin(df_tblProjectsInScenarios['intProjID'])]
 
     # project attributes
     df_tblLineProjects = rd_sql(server, database, 'tblLineProjects_evw', version, None, None, None, False, epsg=epsg)

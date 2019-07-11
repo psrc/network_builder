@@ -102,7 +102,7 @@ if __name__ == '__main__':
         scenario_edges = flagged_network.scenario_edges
         logger.info('Finished updating network from projects')
     else:
-         scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
+         scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceDate <= config['model_year']) 
                                       & (gdf_TransRefEdges.ActiveLink > 0) 
                                       & (gdf_TransRefEdges.ActiveLink != 999))]
          scenario_edges['projRteID'] = 0
