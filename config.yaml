@@ -1,6 +1,6 @@
 data_path : D:/network_builder/OSM_2040
 
-server: SQL2016\DSAPROD
+server: AWS-PROD-SQL\SOCKEYE
 
 database: OSMtest
 
