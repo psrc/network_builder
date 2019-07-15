@@ -4,10 +4,9 @@
 - Set up a virtual environment via Anaconda prompt
   - `conda create --name network_builder`
   
- - Install the following libraries *before* geopandas
+ - Install the following libraries
   - `conda install networkx`
   - `conda install pymssql`
-  - `conda install geopandas`
 
 - Geopandas is used throughout the code and is often challenging to install. It is helpful to use only a single conda library source when working with geopandas. To install with the conda-forge source:
   - `conda create -c conda-forge --override-channels -n geopandas geopandas`
