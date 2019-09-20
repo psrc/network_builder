@@ -213,9 +213,11 @@ if __name__ == '__main__':
                 zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
                 zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
                 path = os.path.join(build_file_folder, 'TAZIndex.txt')
-                zonal_inputs_tuple[0].to_csv(path, columns = ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External'], index = False, sep='\t')
+                _df = zonal_inputs_tuple[0]
+                _df.fillna(0, inplace=True)
+                _df.to_csv(path, columns = ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External'], index = False, sep='\t')
                 path = os.path.join(build_file_folder, 'p_r_nodes.csv')
-                zonal_inputs_tuple[1].to_csv(path, columns = ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost'], index = False) 
+                zonal_inputs_tuple[1].astype('str').to_csv(path, columns = ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost'], index = False) 
                 
                 headways = TransitHeadways(gdf_TransitLines, df_transit_frequencies, config)
                 headways_df = headways.build_headways()
