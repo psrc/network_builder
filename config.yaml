@@ -1,14 +1,14 @@
-data_path : D:/stefan/GDB_Data/OSM_2040
+data_path : \\modelsrv7\d$\stefan\GDB_Data\OSM_2040
 
-server: SQL2016\DSAPROD
+server: AWS-Prod-SQL\Sockeye
 
 database: OSMtest
 
 version: DBO.Stefan
 
-output_dir: outputs_2040
+output_dir: outputs_2018_9_19
 
-model_year: 2040
+model_year: 2018
 
 scenario_name: constrained_2040
 
@@ -20,7 +20,7 @@ node_offset: 0
 
 max_regular_zone: 3700
 
-update_network_from_projects : True 
+update_network_from_projects : False 
 
 number_of_pools: 12
 

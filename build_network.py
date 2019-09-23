@@ -215,9 +215,13 @@ if __name__ == '__main__':
                 path = os.path.join(build_file_folder, 'TAZIndex.txt')
                 _df = zonal_inputs_tuple[0]
                 _df.fillna(0, inplace=True)
-                _df.to_csv(path, columns = ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External'], index = False, sep='\t')
+                tazindex_cols = ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External']
+                _df[tazindex_cols] = _df[tazindex_cols].astype('int32').astype('str')
+                _df.to_csv(path, columns = tazindex_cols, index=False, sep='\t')
                 path = os.path.join(build_file_folder, 'p_r_nodes.csv')
-                zonal_inputs_tuple[1].astype('str').to_csv(path, columns = ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost'], index = False) 
+                _df = zonal_inputs_tuple[1]
+                _df[['NodeID','ZoneID','Capacity','Cost']] = _df[['NodeID','ZoneID','Capacity','Cost']].astype('int').astype('str')
+                _df.to_csv(path, columns = ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost'], index=False) 
                 
                 headways = TransitHeadways(gdf_TransitLines, df_transit_frequencies, config)
                 headways_df = headways.build_headways()
