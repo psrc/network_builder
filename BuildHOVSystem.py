@@ -8,10 +8,10 @@ from shapely.geometry import Point
 
 class BuildHOVSystem(object):
 
-    def __init__(self, network_gdf, junctions_gdf, time_period, config):
+    def __init__(self, network_gdf, junctions_gdf, config):
         self.network_gdf = network_gdf
         self.junctions_gdf = junctions_gdf
-        self.time_period = time_period
+        #self.time_period = time_period
         self.config = config
         self._logger = log_controller.logging.getLogger('main_logger')
         self.hov_edges = self._get_hov_edges()
@@ -41,12 +41,8 @@ class BuildHOVSystem(object):
         Returns a DF of shifted edges that represent
         HOV/Managed lanes.
         '''
-        ij_field_name = 'IJLanesHOV' + self.time_period
-        ji_field_name = 'JILanesHOV' + self.time_period
-        # Get edges that have an hov attribute for this time period
-        hov_edges = self.network_gdf[(self.network_gdf[ij_field_name] >
-                                      0) | (self.network_gdf
-                                            [ji_field_name] > 0)]
+        # Get edges that have an hov attribute for any time period
+        hov_edges = self.network_gdf[self.network_gdf['is_hov'] > 0]
         # Shift them
         shift_edges_geom = hov_edges.geometry.apply(
             self._shift_edges, args=(self.config['hov_shift_dist'],))

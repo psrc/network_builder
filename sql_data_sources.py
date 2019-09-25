@@ -47,15 +47,15 @@ def rd_sql(server, database, table, version,  col_names=None, where_col=None, wh
             stmt2 = 'SELECT ' + geo_col + '.STGeometryN(1).ToString()' + ' FROM ' + table + ' WHERE ' + str([where_col]).replace('\'', '"')[1:-1] + ' IN (' + str(where_val)[1:-1] + ')'
         df2 = read_sql(stmt2, conn)
         df2.columns = ['geometry']
-        #try:
+        try:
 
         #test = np.array_split(df2, 3)
-        geometry = map(lambda x: loads(x), df2.geometry) 
+            geometry = map(lambda x: loads(x), df2.geometry) 
         #geometry2 = map(lambda x: loads(x), test[2].geometry)
         #geometry = map(loads, df2.geometry)
         #geometry = [loads(x) for x in df2.geometry]
-        #except:
-        #    print ('Loading Geometry for %s failed. Check to make there are no 0 length features or feature that contain M values. Exiting Program!' % table)
+        except:
+            print ('Loading Geometry for %s failed. Check to make there are no 0 length features or feature that contain M values. Exiting Program!' % table)
 
         df = GeoDataFrame(df, geometry=geometry, crs={'init' :'epsg:' + str(epsg)})
         if 'Shape' in df.columns:

@@ -186,6 +186,16 @@ if __name__ == '__main__':
         os.makedirs(os.path.join(build_file_folder, 'shape'))
         os.makedirs(os.path.join(build_file_folder, 'extra_attributes'))
 
+        #flag links that are HOV
+        hov_columns = [col for col in scenario_edges.columns if 'LanesHOV' in col]
+        scenario_edges['is_hov'] = scenario_edges[hov_columns].sum(axis=1)
+        scenario_edges['is_hov'] = np.where(scenario_edges['is_hov'] > 0, 1, 0)
+        
+        hov_system = BuildHOVSystem(scenario_edges, scenario_junctions, config)
+        #hov_edges = hov_system.hov_edges
+        #hov_junctions = hov_system.hov_junctions
+        #hov_weave_edges = hov_system.hov_weave_edges
+
         for time_period in config['time_periods']:
             dir = os.path.join(config['output_dir'], 'shapefiles', time_period)
             try:
@@ -193,14 +203,26 @@ if __name__ == '__main__':
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
-            test = BuildHOVSystem(scenario_edges, scenario_junctions, time_period, config)
-            tod_edges = pd.concat([scenario_edges, pd.DataFrame(test.hov_weave_edges)])
-            tod_edges = pd.concat([tod_edges, pd.DataFrame(test.hov_edges)],)
+            # get hov edges & junctions that are in this time period
+            ij_field_name = 'IJLanesHOV' + time_period
+            ji_field_name = 'JILanesHOV' + time_period
+            # Get edges that have an hov attribute for this time period
+            hov_edges = hov_system.hov_edges[(hov_system.hov_edges[ij_field_name] >
+                                      0) | (hov_system.hov_edges
+                                            [ji_field_name] > 0)]
+            hov_junction_list = list(set(hov_edges.NewINode.tolist() + hov_edges.NewJNode.tolist()))
+            hov_junctions = hov_system.hov_junctions[hov_system.hov_junctions.ScenarioNodeID.isin(hov_junction_list)]
+
+            hov_weave_edges = hov_system.hov_weave_edges[(hov_system.hov_weave_edges.NewINode.isin(hov_junction_list)) | (hov_system.hov_weave_edges.NewJNode.isin(hov_junction_list))]
+
+            #test = BuildHOVSystem(scenario_edges, scenario_junctions, time_period, config)
+            tod_edges = pd.concat([scenario_edges, pd.DataFrame(hov_weave_edges)])
+            tod_edges = pd.concat([tod_edges, pd.DataFrame(hov_edges)],)
             # need to reset so we dont have duplicate index values
             tod_edges.reset_index(inplace = True)
             tod_edges.crs =  {'init' : 'EPSG:2285'}
 
-            tod_junctions =  pd.concat([scenario_junctions, test.hov_junctions])
+            tod_junctions =  pd.concat([scenario_junctions, hov_junctions])
             tod_junctions.reset_index(inplace = True)
             tod_junctions.crs =  {'init' : 'EPSG:2285'}
 

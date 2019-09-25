@@ -2,11 +2,13 @@ data_path : \\modelsrv7\d$\stefan\GDB_Data\OSM_2040
 
 server: AWS-Prod-SQL\Sockeye
 
-database: OSMtest
+database: OSMTest
 
 version: DBO.Stefan
 
-output_dir: outputs_2018_9_19
+
+output_dir: test_2018_transit
+
 
 model_year: 2018
 
@@ -55,6 +57,7 @@ reversibles:
 extra_attributes:
   'LINK' : ['FacilityType', 'CountyID', 'CountID', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
   'NODE' : ['lr_walk']
+  'TRANSIT_LINE' : ['route_code']
 
 # Directional attributes used for project updates & network thinning.
 dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLanesGPNI', 'JILanesGPAM', 
