@@ -149,6 +149,15 @@ if __name__ == '__main__':
     turn_df = pd.DataFrame(turn_list)
     turn_df = turn_df.merge(gdf_TurnMovements, how = 'left', left_on = 'turn_id', right_on = 'TurnID')
 
+    #deal with node extra attributes for transit assignment
+    #special_routes = gdf_TransitLines[gdf_TransitLines.Mode.isin(['f', 'c'])]
+    #special_stops = gdf_TransitPoints[gdf_TransitPoints['LineID'].isin(special_routes['LineID'])].PSRCJunctID.tolist()
+    #scenario_junctions['hdwfr'] = np.where(scenario_junctions.ScenarioNodeID.isin(special_stops), .1,.5)
+    #scenario_junctions['wait'] = np.where(scenario_junctions.ScenarioNodeID.isin(special_stops), 1,2)
+    #scenario_junctions['invt'] = np.where(scenario_junctions.ScenarioNodeID.isin(special_stops), .7,1)
+
+
+
     if config['create_emme_network']:
         logger.info("creating emme bank")
         emme_folder = os.path.join(config['output_dir'], config['emme_folder_name'])
@@ -190,6 +199,7 @@ if __name__ == '__main__':
         hov_columns = [col for col in scenario_edges.columns if 'LanesHOV' in col]
         scenario_edges['is_hov'] = scenario_edges[hov_columns].sum(axis=1)
         scenario_edges['is_hov'] = np.where(scenario_edges['is_hov'] > 0, 1, 0)
+        scenario_edges['is_managed'] = 0
         
         hov_system = BuildHOVSystem(scenario_edges, scenario_junctions, config)
         #hov_edges = hov_system.hov_edges
@@ -230,6 +240,9 @@ if __name__ == '__main__':
             model_links = test.full_network
             model_nodes = test.junctions
 
+            #deal with transit node extra attribute:
+
+
             # Use AM network to create zone, park and ride files   
             if time_period == 'AM':
                 zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
@@ -254,9 +267,10 @@ if __name__ == '__main__':
   
             # Do Transit Stuff here
             gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctID + config['node_offset']
-            model_links['weight'] = np.where(model_links['FacilityType'] == 999, .5 * model_links.length, model_links.length)
+            model_links['weight'] = np.where(model_links['is_managed'] == 1, .5 * model_links.length, model_links.length)
      
             route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
+
             if route_id_list:
                 logger.info("Start tracing %s routes", len(route_id_list))
   
@@ -283,14 +297,19 @@ if __name__ == '__main__':
         
             if config['save_network_files'] :
                 model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), driver='ESRI Shapefile')
-                #link_atts = collections.OrderedDict({'direction': 'int', 'i' : 'int', 'j' : 'int', 'length': 'float', 'modes' : 'str', 'type' : 'int', 'lanes' : 'int', 'vdf' : 'int', 'ul1' : 'int', 
-                                                     #'ul2' : 'float', 'ul3' : 'int', 'toll1' : 'int', 'toll2' : 'int', 'toll3' : 'int', 'trkc1' : 'int', 'trkc2' : 'int', 'trkc3' : 'int','PSRCEdgeID' : 'int', 
-                                                     #'FacilityTy' : 'int', 'weight' : 'float', 'id' : 'str', 'Processing_x' : 'int', 'projRteID' : 'int', 'CountyID' : 'int', 'CountID' : 'int'})
-                #link_schema = collections.OrderedDict({'geometry': 'LineString','properties': link_atts})
+
                 model_links.to_file(os.path.join(dir, time_period + '_edges.shp'),  driver='ESRI Shapefile')
 
             if config['create_emme_network']:
                 if route_id_list:
+                    # deal with transit node attributes
+                    special_segs = transit_segments[transit_segments['transit_mode'].isin(['f', 'c'])]
+                    special_nodes = list(set(special_segs['i'].tolist() + special_segs['j'].tolist()))
+                    model_nodes['hdwfr'] = np.where(model_nodes['i'].isin(special_nodes), .1, .5)
+                    model_nodes['wait'] = np.where(model_nodes['i'].isin(special_nodes), 1, 2)
+                    model_nodes['invt'] = np.where(model_nodes['i'].isin(special_nodes), .7, 1)
+   
+
                     emme_network = EmmeNetwork(my_project, time_period, gdf_TransitLines, model_links, model_nodes, turn_df, config, transit_segments)
                 else:
                     emme_network = EmmeNetwork(my_project, time_period, gdf_TransitLines, model_links, model_nodes, turn_df, config)

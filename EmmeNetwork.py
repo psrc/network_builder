@@ -123,7 +123,7 @@ class EmmeNetwork(object):
                 for seg in line.segments():
                     row = self.transit_segments.ix[seg.id]
                     seg.transit_time_func = row.ttf
-                    if line.mode == 'f' or line.mode == 'r' or line.mode == 'c':
+                    if line.mode == 'f' or line.mode == 'c' or line.mode == 'r':
                         seg.allow_alightings = True
                         seg.allow_boardings = True
                         seg.dwell_time = 0

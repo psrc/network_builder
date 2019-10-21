@@ -50,7 +50,7 @@ class BuildHOVSystem(object):
         # Update the the geometry column
         hov_edges.update(shift_edges_geom)
         # Hov_edges = _update_hov_ij_nodes(self, hov_edges)
-        hov_edges['FacilityType'] = 999
+        hov_edges['is_managed'] = 1
         return hov_edges
 
     def _get_hov_junctions(self):

@@ -48,7 +48,8 @@ class BuildScenarioLinks(object):
         network.reset_index(inplace=True)
 
         # configure HOV attributes
-        hov_edges = network[network['FacilityType'] == 999]
+        #hov_edges = network[network['FacilityType'] == 999]
+        hov_edges = network[network['is_managed'] == 1]
         hov_edges = self._configure_hov_attributes(hov_edges)
         network.update(hov_edges)
 
