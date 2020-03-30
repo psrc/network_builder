@@ -38,6 +38,7 @@ class ConfigureTransitSegments(object):
     def _add_stop_column(self):
         self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(self.transit_segments.stop_number.diff()[self.transit_segments.stop_number.diff() != 0].index.values), 1, 0)
         self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(self.transit_segments.stop_number.diff()[self.transit_segments.stop_number.diff() != 0].index.values), 1, 0)
+
     def _add_stop_to_stop_distance_column(self):
         self.transit_segments = self.transit_segments.merge(self.model_links[['i', 'j', 'length']], how = 'left', left_on = ['INode', 'JNode'], right_on = ['i', 'j'])
         self.transit_segments['stop_to_stop_distance'] = self.transit_segments.groupby(['route_id', 'stop_number'])['length'].transform('sum')
@@ -76,6 +77,9 @@ class ConfigureTransitSegments(object):
         coord_y = list(row['geometry_x'].coords)
         coord_x = list(row['geometry_y'].coords)
         return LineString(coord_x + coord_y) 
+
+
+     
 
 
 

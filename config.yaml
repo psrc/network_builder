@@ -4,7 +4,7 @@ server: AWS-Prod-SQL\Sockeye
 
 database: OSMTest
 
-version: DBO.test
+version: DBO.Stefan
 
 
 output_dir: stefan_2018_transit
@@ -55,7 +55,7 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'is_managed', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
   'NODE' : ['lr_walk', 'hdwfr', 'wait', 'invt']
   'TRANSIT_LINE' : ['route_code']
 
@@ -86,11 +86,11 @@ non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'M
 # Attributes in addition to the dir_attributes that can get updated by projects
 project_update_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway']
 
-intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'geometry', 'projRteID', 'Processing_x']
+intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'geometry', 'projRteID', 'Processing_x']
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2','trkc3']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'is_managed']
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'is_managed']
 
 emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk',  'hdwfr', 'wait', 'invt']
 

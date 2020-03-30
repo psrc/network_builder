@@ -75,7 +75,7 @@ class BuildScenarioLinks(object):
 
         # cpnfigure HOT lane tolls
         for k, v in self.config['hot_tolls'].iteritems():
-            hot_links = network[(network['IJLanesHOV' + self.time_period] == k) & (network['FacilityType'] == 999)]
+            hot_links = network[(network['IJLanesHOV' + self.time_period] == k) & (network['is_managed'] == 1)]
             hot_links = self._configure_hot_lane_tolls(hot_links, v)
             network.update(hot_links)
 

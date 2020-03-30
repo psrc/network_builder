@@ -303,12 +303,15 @@ if __name__ == '__main__':
             if config['create_emme_network']:
                 if route_id_list:
                     # deal with transit node attributes
-                    special_segs = transit_segments[transit_segments['transit_mode'].isin(['f', 'c'])]
-                    special_nodes = list(set(special_segs['i'].tolist() + special_segs['j'].tolist()))
-                    model_nodes['hdwfr'] = np.where(model_nodes['i'].isin(special_nodes), .1, .5)
-                    model_nodes['wait'] = np.where(model_nodes['i'].isin(special_nodes), 1, 2)
-                    model_nodes['invt'] = np.where(model_nodes['i'].isin(special_nodes), .7, 1)
+                    #special_segs = transit_segments[transit_segments['transit_mode'].isin(['p', 'f'])]
+                    #special_nodes = list(set(special_segs['i'].tolist() + special_segs['j'].tolist()))
+                    #model_nodes['hdwfr'] = np.where(model_nodes['i'].isin(special_nodes), .1, .5)
+                    #model_nodes['wait'] = np.where(model_nodes['i'].isin(special_nodes), 1, 2)
+                    #model_nodes['invt'] = np.where(model_nodes['i'].isin(special_nodes), .7, 1)
    
+                    model_nodes['invt'] = 1
+                    model_nodes['wait'] = 2
+                    model_nodes['hdwfr'] = .5
 
                     emme_network = EmmeNetwork(my_project, time_period, gdf_TransitLines, model_links, model_nodes, turn_df, config, transit_segments)
                 else:
