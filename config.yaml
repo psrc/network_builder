@@ -4,10 +4,10 @@ server: AWS-Prod-SQL\Sockeye
 
 database: OSMTest
 
-version: DBO.Stefan
+version: DBO.Kris2
 
 
-output_dir: stefan_2018_transit
+output_dir: bike_network_2040
 
 
 model_year: 2018
@@ -27,7 +27,7 @@ update_network_from_projects : False
 number_of_pools: 12
 
 
-time_periods: ['AM', 'MD', 'PM', 'EV', 'NI']
+time_periods: ['AM','MD','PM','EV','NI']
 
 transit_headway_mapper : 
   'hdw_5to6' : ['hour_5']
@@ -55,7 +55,7 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'upslp','bkfac','toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
   'NODE' : ['lr_walk', 'hdwfr', 'wait', 'invt']
   'TRANSIT_LINE' : ['route_code']
 
@@ -65,7 +65,7 @@ dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLan
 'IJLanesHOVAM', 'IJLanesHOVMD', 'IJLanesHOVPM', 'IJLanesHOVEV', 'IJLanesHOVNI', 'JILanesHOVAM', 
 'JILanesHOVMD', 'JILanesHOVPM', 'JILanesHOVEV', 'JILanesHOVNI', 'IJSpeedLimit', 'JISpeedLimit', 
 'IJVDFunc', 'JIVDFunc', 'IJLaneCapGP', 'IJLaneCapHOV', 'JILaneCapGP', 'JILaneCapHOV', 'IJSideWalks', 
-'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK']
+'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK','IJBikeFacility','JIBikeFacility']
 
 toll_columns: ['PSRCEdgeID']  
 
@@ -90,7 +90,7 @@ intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'L
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2','trkc3']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'is_managed']
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'is_managed','bkfac']
 
 emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk',  'hdwfr', 'wait', 'invt']
 
@@ -191,6 +191,9 @@ hov_modes:
 reverse_walk_link_facility_types : [4]
 standard_facility_types : [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
+# Facilities where slope should be calculated; slope of 0 is assumed otherwise
+bike_facility_types : [5, 6, 7, 8, 9, 10, 11]
+
 # Projects are buffered before performing spatial join on edges to help select
 # Edges that may not be perfectly covered by project routes. Adjusting this could 
 # reduce errors reported in log file. 
@@ -202,6 +205,7 @@ hov_shift_dist : 1.906090351
 #build_turns: False    
 #build_transit: False
 build_transit_headways : True 
+build_bike_network : True
 save_network_files : True  
 create_emme_network: True
 export_build_files: True
@@ -209,3 +213,7 @@ emme_folder_name: EMME
 emmebank_title : networks
 modes_file: modes.txt
 transit_vehicle_file: vehicles.txt
+
+# Bike Network
+elev_conversion: 3.28084    # Convert raster elevation from meters to feet
+raster_file_path: D:\dem30m.tif

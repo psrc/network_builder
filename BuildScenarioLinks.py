@@ -79,6 +79,8 @@ class BuildScenarioLinks(object):
             hot_links = self._configure_hot_lane_tolls(hot_links, v)
             network.update(hot_links)
 
+        network['bkfac'] = network['IJBikeFacility']
+
         network = network[self.config['emme_link_columns'] + self.config['additional_keep_columns']]
         network.i = network.i.astype(int)
         network.j = network.j.astype(int)

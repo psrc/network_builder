@@ -7,6 +7,7 @@ import errno
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
+from rasterstats import zonal_stats, point_query
 import yaml
 from FlagNetworkFromProjects import *
 from ThinNetwork import *
@@ -25,6 +26,7 @@ from networkx.algorithms.components import *
 import collections
 import multiprocessing as mp
 import build_transit_segments_parallel
+import build_bike_network_parallel
 import collections
 import inro.emme.database.emmebank as _eb
 import inro.emme.desktop.app as app
@@ -71,8 +73,6 @@ def nodes_to_retain(edges):
     transit_nodes = nodes_from_transit(gdf_TransitPoints)
     edge_nodes = nodes_from_edges(df_tolls['PSRCEdgeID'].tolist(), edges)
     return turn_nodes + centroids + transit_nodes + junctions + edge_nodes
-    
-
 
 
 if __name__ == '__main__':
@@ -91,11 +91,6 @@ if __name__ == '__main__':
 
     model_year = config['model_year']
 
-    #scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
-    #                                  & (gdf_TransRefEdges.ActiveLink > 0) 
-    #                                  & (gdf_TransRefEdges.ActiveLink != 999))]
-    #scenario_edges['projRteID'] = 0
-
     if config['update_network_from_projects']:
         logger.info('Start updating network from projects')
         flagged_network = FlagNetworkFromProjects(gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config)
@@ -107,10 +102,6 @@ if __name__ == '__main__':
                                       & (gdf_TransRefEdges.ActiveLink != 999))]
          scenario_edges['projRteID'] = 0
 
-    #scenario_edges = scenario_edges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
-    #                                  & (scenario_edges.ActiveLink > 0) 
-    #                                  & (scenario_edges.ActiveLink <> 999)) | scenario_edges['projRteID'] > 0]
-    
     logger.info('Start network thinning')
     start_edge_count = len(scenario_edges)
     retain_nodes = nodes_to_retain(scenario_edges)
@@ -148,15 +139,6 @@ if __name__ == '__main__':
         turn_list.append({'turn_id': turn.TurnID, 'i_node' : i_node, 'j_node' : j_node, 'k_node' : k_node})
     turn_df = pd.DataFrame(turn_list)
     turn_df = turn_df.merge(gdf_TurnMovements, how = 'left', left_on = 'turn_id', right_on = 'TurnID')
-
-    #deal with node extra attributes for transit assignment
-    #special_routes = gdf_TransitLines[gdf_TransitLines.Mode.isin(['f', 'c'])]
-    #special_stops = gdf_TransitPoints[gdf_TransitPoints['LineID'].isin(special_routes['LineID'])].PSRCJunctID.tolist()
-    #scenario_junctions['hdwfr'] = np.where(scenario_junctions.ScenarioNodeID.isin(special_stops), .1,.5)
-    #scenario_junctions['wait'] = np.where(scenario_junctions.ScenarioNodeID.isin(special_stops), 1,2)
-    #scenario_junctions['invt'] = np.where(scenario_junctions.ScenarioNodeID.isin(special_stops), .7,1)
-
-
 
     if config['create_emme_network']:
         logger.info("creating emme bank")
@@ -202,9 +184,8 @@ if __name__ == '__main__':
         scenario_edges['is_managed'] = 0
         
         hov_system = BuildHOVSystem(scenario_edges, scenario_junctions, config)
-        #hov_edges = hov_system.hov_edges
-        #hov_junctions = hov_system.hov_junctions
-        #hov_weave_edges = hov_system.hov_weave_edges
+
+        bike_network = pd.DataFrame()
 
         for time_period in config['time_periods']:
             dir = os.path.join(config['output_dir'], 'shapefiles', time_period)
@@ -240,31 +221,6 @@ if __name__ == '__main__':
             model_links = test.full_network
             model_nodes = test.junctions
 
-            #deal with transit node extra attribute:
-
-
-            # Use AM network to create zone, park and ride files   
-            if time_period == 'AM':
-                zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
-                zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
-                path = os.path.join(build_file_folder, 'TAZIndex.txt')
-                _df = zonal_inputs_tuple[0]
-                _df.fillna(0, inplace=True)
-                tazindex_cols = ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External']
-                _df[tazindex_cols] = _df[tazindex_cols].astype('int32').astype('str')
-                _df.to_csv(path, columns = tazindex_cols, index=False, sep='\t')
-                path = os.path.join(build_file_folder, 'p_r_nodes.csv')
-                _df = zonal_inputs_tuple[1]
-                _df[['NodeID','ZoneID','Capacity','Cost']] = _df[['NodeID','ZoneID','Capacity','Cost']].astype('int').astype('str')
-                _df.to_csv(path, columns = ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost'], index=False) 
-                
-                headways = TransitHeadways(gdf_TransitLines, df_transit_frequencies, config)
-                headways_df = headways.build_headways()
-                path = os.path.join(build_file_folder, 'headways.csv')
-                headways_df.to_csv(path)
-
-                                 
-  
             # Do Transit Stuff here
             gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctID + config['node_offset']
             model_links['weight'] = np.where(model_links['is_managed'] == 1, .5 * model_links.length, model_links.length)
@@ -284,6 +240,7 @@ if __name__ == '__main__':
 
                 results = [item for sublist in results for item in sublist]
                 pool.close()
+                pool.join()
 
                 transit_segments = pd.DataFrame(results)
                 if len(transit_segments) > 1:
@@ -294,7 +251,66 @@ if __name__ == '__main__':
             
                 if config['save_network_files'] :
                     transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
-        
+
+            # Use AM network to create zone, park and ride, and bike files   
+            if time_period == 'AM':
+
+                zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
+                zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
+                path = os.path.join(build_file_folder, 'TAZIndex.txt')
+                _df = zonal_inputs_tuple[0]
+                _df.fillna(0, inplace=True)
+                tazindex_cols = ['Zone_id', 'zone_ordinal', 'Dest_eligible', 'External']
+                _df[tazindex_cols] = _df[tazindex_cols].astype('int32').astype('str')
+                _df.to_csv(path, columns = tazindex_cols, index=False, sep='\t')
+                path = os.path.join(build_file_folder, 'p_r_nodes.csv')
+                _df = zonal_inputs_tuple[1]
+                _df[['NodeID','ZoneID','Capacity','Cost']] = _df[['NodeID','ZoneID','Capacity','Cost']].astype('int').astype('str')
+                _df.to_csv(path, columns = ['NodeID', 'ZoneID', 'XCoord', 'YCoord', 'Capacity', 'Cost'], index=False) 
+                
+                headways = TransitHeadways(gdf_TransitLines, df_transit_frequencies, config)
+                headways_df = headways.build_headways()
+                path = os.path.join(build_file_folder, 'headways.csv')
+                headways_df.to_csv(path)
+            
+            if config['build_bike_network']:    # Only run this once
+
+                # Only run this for one time period:
+                if len(bike_network) == 0:
+                    
+                    # Filter bikeable links (remove freeways, ramps, transit-only facilities, centroid connectors)
+                    bike_network = model_links[model_links['FacilityType'].isin(config['bike_facility_types'])]
+
+                    # Intersect elevation raster with all point features along each link
+                    logger.info('Elevation raster start')
+                    pts = np.array(point_query(bike_network, config['raster_file_path']))
+                    logger.info('Elevation raster done')
+                    elev_dict = {}
+
+                    for i in xrange(len(pts)):
+                        id = bike_network.iloc[i].id
+                        elev_dict[id] = pts[i]
+
+                    # Calculate slope between points for all links
+                    # Each link is composed of multiple points, depending on line geometry and length
+                    # Slope is calculated in direction of link & only considers increases in slope
+                    link_ids = bike_network['id'].tolist()
+                    bike_pool = mp.Pool(config['number_of_pools'], build_bike_network_parallel.init_pool, 
+                                    [bike_network, elev_dict])
+                    avg_upslope = bike_pool.map(build_bike_network_parallel.calc_slope_parallel, link_ids)
+
+                    bike_pool.close()
+                    bike_pool.join()  
+
+                    # Slope is the average increase in slope across the link (upslope)
+                    bike_network['upslp'] = avg_upslope
+
+                    logger.info('Bike work done')
+
+                # Join slope to network
+                model_links = model_links.merge(bike_network[['i','j','upslp']], on=['i','j'], how='left')
+                model_links['upslp'] = model_links['upslp'].fillna(0)
+
             if config['save_network_files'] :
                 model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), driver='ESRI Shapefile')
 
@@ -302,12 +318,6 @@ if __name__ == '__main__':
 
             if config['create_emme_network']:
                 if route_id_list:
-                    # deal with transit node attributes
-                    #special_segs = transit_segments[transit_segments['transit_mode'].isin(['p', 'f'])]
-                    #special_nodes = list(set(special_segs['i'].tolist() + special_segs['j'].tolist()))
-                    #model_nodes['hdwfr'] = np.where(model_nodes['i'].isin(special_nodes), .1, .5)
-                    #model_nodes['wait'] = np.where(model_nodes['i'].isin(special_nodes), 1, 2)
-                    #model_nodes['invt'] = np.where(model_nodes['i'].isin(special_nodes), .7, 1)
    
                     model_nodes['invt'] = 1
                     model_nodes['wait'] = 2
@@ -338,9 +348,6 @@ if __name__ == '__main__':
 
                 path = os.path.join(build_file_folder, 'shape', time_period.lower() + '_shape.in')
                 my_project.export_shape(path)
-
-
-
 
     end_time = datetime.datetime.now()
     elapsed_total = end_time - start_time
