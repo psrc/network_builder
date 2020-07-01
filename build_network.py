@@ -310,6 +310,8 @@ if __name__ == '__main__':
                 # Join slope to network
                 model_links = model_links.merge(bike_network[['i','j','upslp']], on=['i','j'], how='left')
                 model_links['upslp'] = model_links['upslp'].fillna(0)
+            else:
+                 model_links['upslp'] = -1
 
             if config['save_network_files'] :
                 model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), driver='ESRI Shapefile')

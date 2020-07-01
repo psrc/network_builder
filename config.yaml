@@ -216,4 +216,4 @@ transit_vehicle_file: vehicles.txt
 
 # Bike Network
 elev_conversion: 3.28084    # Convert raster elevation from meters to feet
-raster_file_path: D:\dem30m.tif
+raster_file_path: R:\e2projects_two\SoundCast\Inputs\slope\dem30m.tif
