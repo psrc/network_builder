@@ -39,8 +39,8 @@ class EmmeNetwork(object):
     def load_network(self):
         scenario_id = self.config['time_periods'].index(self.time_period) + 1
         scenario = self._create_scenario(self.time_period, scenario_id)
-        self.emme_project.process_modes(self.config['data_path'] + '\\' +  self.config['modes_file'], scenario)
-        self.emme_project.process_vehicles(self.config['data_path'] + '\\' +  self.config['transit_vehicle_file'], scenario)
+        self.emme_project.process_modes(self.config['modes_file'], scenario)
+        self.emme_project.process_vehicles(self.config['transit_vehicle_file'], scenario)
         #('inputs/scenario/networks/' + self.config['transit_vehicle_file'] , self.emme_project.bank.scenario(scenario_id))
         self._load_network_elements(scenario)
 

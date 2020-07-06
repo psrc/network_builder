@@ -4,10 +4,10 @@ server: AWS-Prod-SQL\Sockeye
 
 database: OSMTest
 
-version: DBO.Kris2
+version: DBO.Brice
 
 
-output_dir: bike_network_2040
+output_dir: bike_network_2018
 
 
 model_year: 2018
@@ -211,9 +211,10 @@ create_emme_network: True
 export_build_files: True
 emme_folder_name: EMME
 emmebank_title : networks
-modes_file: modes.txt
-transit_vehicle_file: vehicles.txt
+modes_file: inputs\modes.txt
+transit_vehicle_file: inputs\vehicles.txt
 
 # Bike Network
 elev_conversion: 3.28084    # Convert raster elevation from meters to feet
 raster_file_path: R:\e2projects_two\SoundCast\Inputs\slope\dem30m.tif
+ferry_link_factor: 2.0

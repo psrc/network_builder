@@ -143,7 +143,7 @@ if __name__ == '__main__':
     if config['create_emme_network']:
         logger.info("creating emme bank")
         emme_folder = os.path.join(config['output_dir'], config['emme_folder_name'])
-        emmebank_dimensions_dict = json.load(open(os.path.join(config['data_path'], 'emme_bank_dimensions.json')))
+        emmebank_dimensions_dict = json.load(open('inputs/emme_bank_dimensions.json'))
         if os.path.exists(emme_folder):
             shutil.rmtree(emme_folder)
         os.makedirs(emme_folder)
@@ -252,7 +252,7 @@ if __name__ == '__main__':
                 if config['save_network_files'] :
                     transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
 
-            # Use AM network to create zone, park and ride, and bike files   
+            # Use AM network to create zone and park and ride files   
             if time_period == 'AM':
 
                 zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
