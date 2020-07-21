@@ -213,6 +213,14 @@ emme_folder_name: EMME
 emmebank_title : networks
 modes_file: inputs\modes.txt
 transit_vehicle_file: inputs\vehicles.txt
+submode_dict : { 'b': 'bus', 
+                 'c': 'commuter_rail',
+                 'r': 'light_rail',
+                 'f': 'ferry',
+                 'p': 'ferry',
+                 'x':'frequent',
+                 'y':'express',
+                 'z': 'brt'}
 
 # Bike Network
 elev_conversion: 3.28084    # Convert raster elevation from meters to feet

@@ -252,7 +252,7 @@ if __name__ == '__main__':
                 if config['save_network_files'] :
                     transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
 
-            # Use AM network to create zone and park and ride files   
+            # Use AM network to create zone, park and ride, and transit stops files   
             if time_period == 'AM':
 
                 zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
@@ -272,6 +272,23 @@ if __name__ == '__main__':
                 headways_df = headways.build_headways()
                 path = os.path.join(build_file_folder, 'headways.csv')
                 headways_df.to_csv(path)
+
+                # Create transit stops file
+                df = pd.DataFrame()
+                for mode in pd.unique(gdf_TransitLines['Mode']):
+                    transit_edges_submode = gdf_TransitLines[gdf_TransitLines['Mode'] == mode]
+                    stops_df = gdf_TransitPoints[gdf_TransitPoints['LineID'].isin(transit_edges_submode['LineID'].values)]
+                    stops_df['submode'] = mode
+                    stops_df['x'] = stops_df.geometry.x
+                    stops_df['y'] = stops_df.geometry.y
+                    df = df.append(stops_df[['submode','x','y']])
+
+                for submode, colname in config['submode_dict'].items(): 
+                    df.loc[df['submode'] == submode, colname] = 1
+                df.fillna(0, inplace=True)
+                df.drop('submode', axis=1, inplace=True)
+                df.to_csv(os.path.join(build_file_folder,'transit', 
+                    'transit_stops_'+str(model_year)+'.csv'), index=False)
             
             if config['build_bike_network']:    # Only run this once
 
