@@ -281,14 +281,14 @@ if __name__ == '__main__':
                     stops_df['submode'] = mode
                     stops_df['x'] = stops_df.geometry.x
                     stops_df['y'] = stops_df.geometry.y
-                    df = df.append(stops_df[['submode','x','y']])
+                    df = df.append(stops_df[['submode','x','y','PSRCJunctID']])
 
+                df = df.groupby(['submode','PSRCJunctID']).max().reset_index()
                 for submode, colname in config['submode_dict'].items(): 
                     df.loc[df['submode'] == submode, colname] = 1
                 df.fillna(0, inplace=True)
                 df.drop('submode', axis=1, inplace=True)
-                df.to_csv(os.path.join(build_file_folder,'transit', 
-                    'transit_stops_'+str(model_year)+'.csv'), index=False)
+                df.to_csv(os.path.join(build_file_folder,'transit_stops.csv'), index=False)
             
             if config['build_bike_network']:    # Only run this once
 

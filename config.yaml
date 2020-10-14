@@ -217,9 +217,8 @@ submode_dict : { 'b': 'bus',
                  'c': 'commuter_rail',
                  'r': 'light_rail',
                  'f': 'ferry',
-                 'p': 'ferry',
-                 'x':'frequent',
-                 'y':'express',
+                 'p': 'express',
+                 'x': 'frequent',
                  'z': 'brt'}
 
 # Bike Network
