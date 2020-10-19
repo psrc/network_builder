@@ -5,12 +5,14 @@
   - `conda create --name network_builder`
   
  - Install the following libraries
+  - `conda install geopandas`
   - `conda install networkx`
   - `conda install pymssql`
-
-- Geopandas is used throughout the code and is often challenging to install. It is helpful to use only a single conda library source when working with geopandas. To install with the conda-forge source:
-  - `conda create -c conda-forge --override-channels -n geopandas geopandas`
-
+  - `conda install yaml`
+  - `pip install rasterstats` 
+      - if unable to install, first install GDAL and rasterio from wheel [following directions here](https://rasterio.readthedocs.io/en/latest/installation.html#windows) 
+  
+  
 - Update INRO path file from Emme to point to network_builder environment
     - Tools -> Application Options -> Modeller -> Python Path: `C:\anaconda\envs\network_builder`
     - Apply
