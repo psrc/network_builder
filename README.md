@@ -9,6 +9,7 @@ Install the following libraries
   - `conda install networkx`
   - `conda install pymssql`
   - `conda install yaml`
+  - `pip install pyyaml` 
   - `pip install rasterstats` 
       - if unable to install, first install GDAL and rasterio from wheel [following directions here](https://rasterio.readthedocs.io/en/latest/installation.html#windows) 
   
