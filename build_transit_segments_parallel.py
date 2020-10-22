@@ -38,7 +38,7 @@ def trace_transit_route(route_id):
             logger.info('No path between ' + str(points_list[0]) + 'and '+ str(points_list[1]) + ' in ' +  str(route_id))
             #global_logger.info("No path between %s and %s in route %s !" & (str(points_list[0]), str(points_list[1]), str(route_id)))
             row_list.append({'route_id' : route_id, 'INode' : points_list[0], 'JNode' : points_list[1], 'order' : 9999, 'stop_number' : 9999})
-            print 'No path between ' + str(points_list[0]) + 'and '+ str(points_list[1]) + ' in ' +  str(route_id)
+            print ('No path between ' + str(points_list[0]) + 'and '+ str(points_list[1]) + ' in ' +  str(route_id))
             break
 
     return row_list

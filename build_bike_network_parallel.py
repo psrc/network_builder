@@ -19,8 +19,8 @@ def calc_slope_parallel(link_id):
 
     # Generate two geodataframes; one for an initial point, the other for the subsequent point
     # Each row of the dataframes represents a unique pair of points (a segment) in order across the linestring
-    _gdf_seg_start = gpd.GeoDataFrame(geometry=[Point(_df_edges.geometry.coords[i]) for i in xrange(num_edge_points-1)], crs=crs)
-    _gdf_seg_end = gpd.GeoDataFrame(geometry=[Point(_df_edges.geometry.coords[i]) for i in xrange(1, num_edge_points)], crs=crs)
+    _gdf_seg_start = gpd.GeoDataFrame(geometry=[Point(_df_edges.geometry.coords[i]) for i in range(num_edge_points-1)], crs=crs)
+    _gdf_seg_end = gpd.GeoDataFrame(geometry=[Point(_df_edges.geometry.coords[i]) for i in range(1, num_edge_points)], crs=crs)
 
     # Calculate XY distance between each point
     xy_dist = pd.DataFrame(_gdf_seg_start.distance(_gdf_seg_end), columns=['xy_dist'])
@@ -29,7 +29,7 @@ def calc_slope_parallel(link_id):
     if None not in _elev_pts:
 
         # Calculate difference in elevation from initial point to each next point
-        tot_elev_change = [_elev_pts[i] - _elev_pts[i-1] for i in xrange(1,len(_elev_pts))]
+        tot_elev_change = [_elev_pts[i] - _elev_pts[i-1] for i in range(1,len(_elev_pts))]
 
         # Convert elevation from meters to feet
         tot_elev_change = [config['elev_conversion']*i for i in tot_elev_change]

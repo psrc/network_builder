@@ -17,7 +17,7 @@ class EmmeNetwork(object):
         self.time_period = time_period
         self.links = model_links
         self.nodes = model_nodes
-        self.turns = turns[turns['Function' + time_period.upper()] <>99]
+        self.turns = turns[turns['Function' + time_period.upper()] !=99]
         self.transit_segments = transit_segments
         #transit_lines = transit_lines[transit_lines.InServiceD==2014]
         transit_lines = transit_lines.loc[transit_lines['Headway_' + self.time_period] > 0]
@@ -45,7 +45,7 @@ class EmmeNetwork(object):
         self._load_network_elements(scenario)
 
     def _create_extra_attributes(self, scenario):
-         for type, atts in self.config['extra_attributes'].iteritems():
+         for type, atts in self.config['extra_attributes'].items():
              for att in atts:
                  att = '@' + att
                  scenario.create_extra_attribute(type, att.lower())
@@ -121,7 +121,7 @@ class EmmeNetwork(object):
             for line in network.transit_lines():
                 x = x + 1
                 for seg in line.segments():
-                    row = self.transit_segments.ix[seg.id]
+                    row = self.transit_segments.loc[seg.id]
                     seg.transit_time_func = row.ttf
                     if line.mode == 'f' or line.mode == 'c' or line.mode == 'r':
                         seg.allow_alightings = True

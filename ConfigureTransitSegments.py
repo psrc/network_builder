@@ -30,7 +30,7 @@ class ConfigureTransitSegments(object):
             for row in self.transit_segments[self.transit_segments['order'] == 9999].iterrows():
                 self._logger.warning("Warning: No path between nodes %s and %s in %s route %s !" % (row[1].INode, row[1].JNode, self.time_period, row[1].route_id))
                 self._logger.warning("Warning: Removing all segments from this route!")
-                self.transit_segments = self.transit_segments[self.transit_segments['route_id'] <> row[1].route_id]
+                self.transit_segments = self.transit_segments[self.transit_segments['route_id'] != row[1].route_id]
 
         else:
              self._logger.warning("There are no errors in the %s Transit Segment Table" % (self.time_period))
@@ -59,14 +59,14 @@ class ConfigureTransitSegments(object):
 
         
     def _add_ttf(self, row):
-        link = self.model_links.ix[row.ij]
+        link = self.model_links.loc[row.ij]
         if row.transit_mode == "r" or row.transit_mode == "c" or row.transit_mode == "f":
             return 5
         elif link.mode == "bp" or link.mode == "bwlp" or link.mode == "brp" or link.mode == "bwp":
             return 4
         elif row.stop_to_stop_distance > 1.5:
             return 14
-        elif link.ul3 < 3 and row.stop_to_stop_distance > .5:
+        elif (link.ul3 < 3).all() & (row.stop_to_stop_distance > .5):
             return 13
         elif row.stop_to_stop_distance > .5:
             return 12

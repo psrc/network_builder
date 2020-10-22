@@ -65,6 +65,12 @@ class BuildScenarioLinks(object):
         #create reverse walk links on one_way arterials/collectors
         reverse_walk_links = self._create_reverse_walk_links(network)
         reverse_walk_links = self._configure_emme_walk_attributes(reverse_walk_links, self.config['walk_links'])
+        
+        # find duplicate links due to OSM network having one-way streets sharing samee IJ JI
+        reverse_walk_links['id'] = reverse_walk_links.i.astype(str) + '-' + reverse_walk_links.j.astype(str)
+        network['id'] = network.i.astype(str) + '-' + network.j.astype(str)
+        reverse_walk_links = reverse_walk_links[~reverse_walk_links['id'].isin(network['id'])]
+
         network = pd.concat([network, reverse_walk_links])
         network.reset_index(drop = True, inplace=True)
         
@@ -74,7 +80,7 @@ class BuildScenarioLinks(object):
         network.update(weave_links)
 
         # cpnfigure HOT lane tolls
-        for k, v in self.config['hot_tolls'].iteritems():
+        for k, v in self.config['hot_tolls'].items():
             hot_links = network[(network['IJLanesHOV' + self.time_period] == k) & (network['is_managed'] == 1)]
             hot_links = self._configure_hot_lane_tolls(hot_links, v)
             network.update(hot_links)
@@ -152,8 +158,9 @@ class BuildScenarioLinks(object):
 
 
     def _create_reverse_walk_links(self, network):
-        reverse_walk_links = network[network.NewFacilityType.isin(self.config['reverse_walk_link_facility_types'])]
+        reverse_walk_links = network[network.FacilityType.isin(self.config['reverse_walk_link_facility_types'])]
         reverse_walk_links = reverse_walk_links[(reverse_walk_links['Oneway'] == 0) | (reverse_walk_links['Oneway'] == 1)]
+        reverse_walk_links = reverse_walk_links[reverse_walk_links['is_managed'] == 0]
         flipped_geom = reverse_walk_links.geometry.apply(self._flip_edges)
         reverse_walk_links.geometry.update(flipped_geom)
         cols = self._switch_attributes_dict()
@@ -278,6 +285,13 @@ class BuildScenarioLinks(object):
         if empty_mode:
             for edge_id in empty_mode:
                 self._logger.warning('Warning: Edge %s mode field is blank. Please fix!' % (edge_id))
+
+        duplicates = edges[edges['id'].value_counts()>1]['id'].tolist()
+        if duplicates:
+            for duplicate in duplicates:
+                self._logger.warning('Warning: Edge %s has duplicates. Please fix!' % (duplicates))
+
+
         return edges
         
 

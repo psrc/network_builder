@@ -33,7 +33,7 @@ import inro.emme.desktop.app as app
 import json
 import shutil
 from shutil import copy2 as shcopy
-
+import multiprocessing as mp
 
 def nodes_from_turns(turns, edges):
     edge_list = turns.FrEdgeID.tolist() + turns.ToEdgeID.tolist()
@@ -56,7 +56,7 @@ def retain_junctions(junctions):
 def nodes_from_edges(list_of_edges, edges):
     edges = edges[edges.PSRCEdgeID.isin(list_of_edges)]
     node_list = edges.INode.tolist()
-    print len(node_list)
+    print(len(node_list))
     node_list = node_list + edges.JNode.tolist()
     return list(set(node_list))
 
@@ -77,6 +77,7 @@ def nodes_to_retain(edges):
 
 if __name__ == '__main__':
     pd.options.display.float_format = '{:.4f}'.format
+    mp.freeze_support()
 
     config = yaml.safe_load(open("config.yaml"))
 
@@ -124,7 +125,7 @@ if __name__ == '__main__':
         if from_edge.empty:
             logger.warning("Warning: From edge from Turn %s not found!" % (turn.TurnID))
             continue
-        elif int(from_edge.NewINode) <> j_node:
+        elif int(from_edge.NewINode) != j_node:
             i_node = int(from_edge.NewINode)
         else:
             i_node = int(from_edge.NewJNode)
@@ -132,7 +133,7 @@ if __name__ == '__main__':
         if to_edge.empty:
             logger.warning("Warning: To edge from Turn %s not found!" % (turn.TurnID))
             continue
-        elif int(to_edge.NewINode) <> j_node:
+        elif int(to_edge.NewINode) != j_node:
             k_node = int(to_edge.NewINode)
         else:
             k_node = int(to_edge.NewJNode)
@@ -226,17 +227,19 @@ if __name__ == '__main__':
             model_links['weight'] = np.where(model_links['is_managed'] == 1, .5 * model_links.length, model_links.length)
      
             route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
-
+            print (len(route_id_list))
+            route_id_list =[]
             if route_id_list:
                 logger.info("Start tracing %s routes", len(route_id_list))
   
                 # when tracing, only use edges that support transit
                 transit_edges = model_links.loc[(model_links.i > config['max_zone_number']) & (model_links.j > config['max_zone_number'])].copy()  
-                transit_edges = transit_edges.loc[transit_edges['modes'] <> 'wk']
+                transit_edges = transit_edges.loc[transit_edges['modes'] != 'wk']
                 transit_edges = transit_edges.loc[transit_edges['lanes'] > 0]
     
-                pool = mp.Pool(config['number_of_pools'], build_transit_segments_parallel.init_pool, [transit_edges, gdf_TransitLines, gdf_TransitPoints])
+                pool = mp.Pool(config['number_of_pools'], build_transit_segments_parallel.init_pool, [transit_edges,gdf_TransitLines, gdf_TransitPoints])
                 results = pool.map(build_transit_segments_parallel.trace_transit_route, route_id_list)
+                
 
                 results = [item for sublist in results for item in sublist]
                 pool.close()
@@ -304,7 +307,7 @@ if __name__ == '__main__':
                     logger.info('Elevation raster done')
                     elev_dict = {}
 
-                    for i in xrange(len(pts)):
+                    for i in range(len(pts)):
                         id = bike_network.iloc[i].id
                         elev_dict[id] = pts[i]
 

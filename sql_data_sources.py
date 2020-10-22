@@ -1,6 +1,6 @@
 from pymssql import connect
 from pandas import read_sql
-from shapely.wkt import loads
+from shapely import wkt
 import geopandas as gpd
 from geopandas import GeoDataFrame
 import pandas as pd
@@ -36,6 +36,7 @@ def rd_sql(server, database, table, version,  col_names=None, where_col=None, wh
     cursor = conn.cursor()
     cursor.execute("sde.set_current_version %s", version)
     df = read_sql(stmt1, conn)
+	
 
     ## Read in geometry if required
     if geo_col:
@@ -48,9 +49,7 @@ def rd_sql(server, database, table, version,  col_names=None, where_col=None, wh
         df2 = read_sql(stmt2, conn)
         df2.columns = ['geometry']
         try:
-
-        #test = np.array_split(df2, 3)
-            geometry = map(lambda x: loads(x), df2.geometry) 
+            geometry = df2['geometry'].apply(wkt.loads)
         #geometry2 = map(lambda x: loads(x), test[2].geometry)
         #geometry = map(loads, df2.geometry)
         #geometry = [loads(x) for x in df2.geometry]

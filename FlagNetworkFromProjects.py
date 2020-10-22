@@ -45,7 +45,7 @@ class FlagNetworkFromProjects(object):
         dup_edges_dict = dup_edges.groupby(['PSRCEdgeID']).apply(
             lambda x: list(x.projRteID)).to_dict()
 
-        for edge_id, proj_ids in dup_edges_dict.iteritems():
+        for edge_id, proj_ids in dup_edges_dict.items():
             self._logger.info(
                 'Warning! Edge %s is covered by more than one project: %s.'
                 % (edge_id, proj_ids))
@@ -156,14 +156,14 @@ class FlagNetworkFromProjects(object):
                                             route_id].PSRCEdgeID.tolist()
             project = self.project_gdf[self.project_gdf.projRteID == route_id]
 
-            if project.ix[project.index[0]].geometry.type == 'MultiLineString':
+            if project.loc[project.index[0]].geometry.type == 'MultiLineString':
                 self._logger.info(
                     'Warning! Project %s is MultiLineString. Cannot update'
                     ' network with this project!' % (
                         route_id))
             else:
                 # Tuple containing sequence of project coords
-                project_coords = [(x[0], x[1]) for x in project.ix
+                project_coords = [(x[0], x[1]) for x in project.loc
                                   [project.index[0]].geometry.coords]
 
                 # Add only coords that are spatialy coincident with junctions
@@ -328,6 +328,6 @@ class FlagNetworkFromProjects(object):
         
         # Delete edges flagged for removal
         self._logger.info('Removing %s edges deleted by projects' % (len(scenario_edges[scenario_edges['FacilityType'] == 99])))
-        scenario_edges = scenario_edges.loc[scenario_edges['FacilityType'] <> 99].copy()
+        scenario_edges = scenario_edges.loc[scenario_edges['FacilityType'] != 99].copy()
 
         return scenario_edges
