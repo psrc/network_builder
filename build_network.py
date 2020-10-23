@@ -228,7 +228,6 @@ if __name__ == '__main__':
      
             route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
             print (len(route_id_list))
-            route_id_list =[]
             if route_id_list:
                 logger.info("Start tracing %s routes", len(route_id_list))
   
