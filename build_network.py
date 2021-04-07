@@ -335,7 +335,8 @@ if __name__ == '__main__':
             if config['save_network_files'] :
                 model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), driver='ESRI Shapefile')
 
-                model_links.to_file(os.path.join(dir, time_period + '_edges.shp'),  driver='ESRI Shapefile')
+                model_links.reset_index(drop = True, inplace = True)
+                model_links.to_file(os.path.join(dir, time_period + '_edges.shp'),  driver='ESRI Shapefile', Index =  False)
 
             if config['create_emme_network']:
                 if route_id_list:
