@@ -2,6 +2,7 @@ import geopandas as gpd
 import pandas as pd
 import log_controller
 import numpy as np
+import sys
 
 
 class FlagNetworkFromProjects(object):
@@ -122,9 +123,16 @@ class FlagNetworkFromProjects(object):
 
         edge_list = []
         for edge in self.network_gdf.itertuples():
+            if edge.geometry.type == 'MultiLineString':
+                self._logger.warning('WARNING: edge ' +
+                                     str(edge.PSRCEdgeID) +
+                                     ' is a multipart feature. Please fix.')
+                sys.exit(1)
+
+
             edge_coords = [(x[0], x[1]) for x in edge.geometry.coords]
 
-            # Oneway IJ or reversible
+                # Oneway IJ or reversible
             if edge.Oneway == 0 or edge.Oneway == 1:
                 edge_list.append((edge.INode, edge.JNode))
 
