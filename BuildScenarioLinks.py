@@ -55,6 +55,9 @@ class BuildScenarioLinks(object):
 
         # configure ferry, rail
         network = self._configure_transit_links(network)
+
+        # configure BAT links
+        network = self._configure_BAT_links(network, self.config['bat_links'])
         
         # reverse reversibles?
         if self.reversible_switch_dir:
@@ -267,6 +270,15 @@ class BuildScenarioLinks(object):
     def _configure_transit_links(self, edges):
         edges.ul2 = edges.ul2.astype(float)
         edges.ul2 = np.where(edges['FacilityType'].isin(self.config['link_time_facility_types']), edges.Processing_x/1000.0, edges.ul2)
+        return edges
+
+    def _configure_BAT_links(self, edges, look_up_dict):
+        # ID BAT lanes by there mode strng
+        modes = self.config['hov_modes'][3]
+        edges.vdf = np.where(edges['modes']==modes, look_up_dict['vdf'], edges.vdf)
+        #edges.FacilityType = np.where(edges['modes']==modes, 0, edges.FacilityType)
+        edges.ul1 = np.where(edges['modes']==modes, look_up_dict['ul1'], edges.ul1)
+        edges.ul3 = np.where(edges['modes']==modes, look_up_dict['ul3'], edges.ul3)
         return edges
 
     def _validate_network(self, edges):

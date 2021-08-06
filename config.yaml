@@ -4,15 +4,15 @@ server: AWS-Prod-SQL\Sockeye
 
 database: OSMTest
 
-version: "'DBO.Stefan'"
+version: "'DBO.Kris2'"
 
 
-output_dir: bike_network_2018
+output_dir: test_2050_new
 
 
-model_year: 2040
+model_year: 2050
 
-scenario_name: constrained_2040
+scenario_name: constrained_2050
 
 main_log_file : 'run_log'
 
@@ -24,7 +24,7 @@ max_regular_zone: 3700
 
 update_network_from_projects : True 
 
-projects_version_year : 2018
+projects_version_year : 2022
 
 number_of_pools: 12
 
@@ -162,6 +162,12 @@ standard_links:
   trkc1: IJtollTrkLt
   trkc2: IJtollTrkMed 
   trkc3: IJtollTrkHvy
+
+bat_links:
+  vdf: 0
+  ul1: 0
+  ul3: 0
+  
 
 
 hov_capacity: 'IJLaneCapHOV'
