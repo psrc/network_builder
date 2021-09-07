@@ -255,7 +255,7 @@ class FlagNetworkFromProjects(object):
 
                         else:
                             # Edge was not selected by project
-                            if (node_list[0], node_list[1], route) in \
+                            if (node_list[0], node_list[1], route_id) in \
                                     self.route_edges_dict.keys():
 
                                 edge_id = self.route_edges_dict[

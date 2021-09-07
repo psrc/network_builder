@@ -67,7 +67,9 @@ class EmmeNetwork(object):
         for link in self.links.iterrows():
             link = link[1]
             if int(link.lanes) > 0:
-                emme_link = network.create_link(link.i, link.j, link.modes)
+                #print (link.i, link.j)
+                #print (link.modes)
+                emme_link = network.create_link(link.i, link.j, link.modes.strip())
                 emme_link.type = int(link.type)
                 emme_link.num_lanes = int(link.lanes)
                 emme_link.length = link.length

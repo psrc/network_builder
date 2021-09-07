@@ -36,8 +36,14 @@ class ConfigureTransitSegments(object):
              self._logger.warning("There are no errors in the %s Transit Segment Table" % (self.time_period))
 
     def _add_stop_column(self):
-        self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(self.transit_segments.stop_number.diff()[self.transit_segments.stop_number.diff() != 0].index.values), 1, 0)
-        self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(self.transit_segments.stop_number.diff()[self.transit_segments.stop_number.diff() != 0].index.values), 1, 0)
+        stop_index = self.transit_segments.reset_index().groupby(['route_id', 'stop_number'])['index'].first()
+        stop_index = stop_index.reset_index()
+        
+
+        self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(stop_index['index']), 1 , 0)
+
+        #self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(self.transit_segments.stop_number.diff()[self.transit_segments.stop_number.diff() != 0].index.values), 1, 0)
+        #self.transit_segments['is_stop'] = np.where(self.transit_segments.index.isin(self.transit_segments.stop_number.diff()[self.transit_segments.stop_number.diff() != 0].index.values), 1, 0)
 
     def _add_stop_to_stop_distance_column(self):
         self.transit_segments = self.transit_segments.merge(self.model_links[['i', 'j', 'length']], how = 'left', left_on = ['INode', 'JNode'], right_on = ['i', 'j'])
@@ -60,7 +66,7 @@ class ConfigureTransitSegments(object):
         
     def _add_ttf(self, row):
         link = self.model_links.loc[row.ij]
-        if row.transit_mode == "r" or row.transit_mode == "c" or row.transit_mode == "f":
+        if row.transit_mode == "r" or row.transit_mode == "c" or row.transit_mode == "f" or row.transit_mode == "p":
             return 5
         elif link.mode == "bp" or link.mode == "bwlp" or link.mode == "brp" or link.mode == "bwp":
             return 4
