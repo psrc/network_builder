@@ -1,14 +1,24 @@
 data_path : \\modelsrv7\d$\stefan\GDB_Data\OSM_2040
 
+# data sources, valid choices are 'enterprise_gdb' or 'file_gdb'
+
+data_source: enterprise_gdb
+
+# The following should be filled out if using an 'enterprise_gdb' connection
 server: AWS-Prod-SQL\Sockeye
 
 database: OSMTest
 
-version: "'DBO.Kris2'"
+version: "'DBO.Stefan'"
 
 
-output_dir: test_2050_new
+# The following should be filled out if using an 'file_gdb' as data_source
 
+file_gdb_path: T:/2021September/Stefan/network.gdb
+
+
+
+output_dir: enterprise_gdb_test
 
 model_year: 2050
 
@@ -164,7 +174,7 @@ standard_links:
   trkc3: IJtollTrkHvy
 
 bat_links:
-  vdf: 0
+  vdf: 9
   ul1: 0
   ul3: 0
   
@@ -213,7 +223,7 @@ hov_shift_dist : 1.906090351
 #build_turns: False    
 #build_transit: False
 build_transit_headways : True 
-build_bike_network : True
+build_bike_network : False
 save_network_files : True  
 create_emme_network: True
 export_build_files: True
