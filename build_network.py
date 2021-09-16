@@ -284,12 +284,20 @@ if __name__ == '__main__':
                     stops_df['x'] = stops_df.geometry.x
                     stops_df['y'] = stops_df.geometry.y
                     df = df.append(stops_df[['submode','x','y','PSRCJunctID']])
+                # Now BRT
+                transit_edges_submode = gdf_TransitLines[gdf_TransitLines['TransitType'] == 3]
+                stops_df = gdf_TransitPoints[gdf_TransitPoints['LineID'].isin(transit_edges_submode['LineID'].values)]
+                stops_df['submode'] = 'z'
+                stops_df['x'] = stops_df.geometry.x
+                stops_df['y'] = stops_df.geometry.y
+                df = df.append(stops_df[['submode','x','y','PSRCJunctID']])
 
                 df = df.groupby(['submode','PSRCJunctID']).max().reset_index()
                 for submode, colname in config['submode_dict'].items(): 
                     df.loc[df['submode'] == submode, colname] = 1
                 df.fillna(0, inplace=True)
                 df.drop('submode', axis=1, inplace=True)
+                df = df.groupby('PSRCJunctID').max().reset_index()
                 df.to_csv(os.path.join(build_file_folder,'transit_stops.csv'), index=False)
             
             if config['build_bike_network']:    # Only run this once
