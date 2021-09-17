@@ -1,8 +1,6 @@
-data_path : \\modelsrv7\d$\stefan\GDB_Data\OSM_2040
+# Type of data source that holds source data- valid choices are 'enterprise_gdb' or 'file_gdb'
 
-# data sources, valid choices are 'enterprise_gdb' or 'file_gdb'
-
-data_source: enterprise_gdb
+data_source_type: enterprise_gdb
 
 # The following should be filled out if using an 'enterprise_gdb' connection
 server: AWS-Prod-SQL\Sockeye
@@ -12,17 +10,21 @@ database: OSMTest
 version: "'DBO.Stefan'"
 
 
-# The following should be filled out if using an 'file_gdb' as data_source
+# The following should be filled out if using a 'file_gdb' as data_source
 
 file_gdb_path: T:/2021September/Stefan/network.gdb
 
 
+# Standard user params:
 
-output_dir: enterprise_gdb_test
+output_dir: E:/networks/test
+
+number_of_pools: 12
 
 model_year: 2050
 
-scenario_name: constrained_2050
+crs:
+  'init' : 'EPSG:2285'
 
 main_log_file : 'run_log'
 
@@ -32,14 +34,52 @@ node_offset: 0
 
 max_regular_zone: 3700
 
+time_periods: ['AM','MD','PM','EV','NI']
+
+
+# Project/Future network params
 update_network_from_projects : True 
+
+scenario_name: constrained_2050 #as defined in the tblProjectsInScenarios table
 
 projects_version_year : 2022
 
 number_of_pools: 12
 
+# Facilities where slope should be calculated; slope of 0 is assumed otherwise
+bike_facility_types : [5, 6, 7, 8, 9, 10, 11]
 
-time_periods: ['AM','MD','PM','EV','NI']
+# Projects are buffered before performing spatial join on edges to help select
+# Edges that may not be perfectly covered by project routes. Adjusting this could 
+# reduce errors reported in log file. 
+project_buffer_dist : 1
+
+# How far to shift HOV lanes from GP lanes:
+hov_shift_dist : 1.906090351
+
+build_transit_headways : True 
+build_bike_network : True
+save_network_files : True  
+create_emme_network: True
+export_build_files: True
+emme_folder_name: EMME
+emmebank_title : networks
+modes_file: inputs\modes.txt
+transit_vehicle_file: inputs\vehicles.txt
+
+submode_dict : { 'b': 'bus', 
+                 'c': 'commuter_rail',
+                 'r': 'light_rail',
+                 'f': 'ferry',
+                 'p': 'express',
+                 'x': 'frequent',
+                 'z': 'brt'}
+
+# Bike Network
+elev_conversion: 3.28084    # Convert raster elevation from meters to feet
+raster_file_path: R:\e2projects_two\SoundCast\Inputs\slope\dem30m.tif
+ferry_link_factor: 2.0
+
 
 transit_headway_mapper : 
   'hdw_5to6' : ['hour_5']
@@ -54,10 +94,6 @@ transit_headway_mapper :
   'hdw_17to18' : ['hour_17']
   'hdw_18to20' : ['hour_18', 'hour_19']
 
-crs:
-  'init' : 'EPSG:2285'
-
-epsg: 2285
 
 reversibles:
   'AM' : [False, False]
@@ -69,7 +105,7 @@ reversibles:
 extra_attributes:
   'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'upslp','bkfac','toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
   'NODE' : ['lr_walk', 'hdwfr', 'wait', 'invt']
-  'TRANSIT_LINE' : ['route_code']
+  'TRANSIT_LINE' : ['route_code', 'TransitType']
 
 # Directional attributes used for project updates & network thinning.
 dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLanesGPNI', 'JILanesGPAM', 
@@ -209,37 +245,3 @@ hov_modes:
 reverse_walk_link_facility_types : [3, 5, 6, 7, 8, 9]
 standard_facility_types : [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-# Facilities where slope should be calculated; slope of 0 is assumed otherwise
-bike_facility_types : [5, 6, 7, 8, 9, 10, 11]
-
-# Projects are buffered before performing spatial join on edges to help select
-# Edges that may not be perfectly covered by project routes. Adjusting this could 
-# reduce errors reported in log file. 
-project_buffer_dist : 1
-
-# How far to shift HOV lanes from gP lanes:
-hov_shift_dist : 1.906090351
-
-#build_turns: False    
-#build_transit: False
-build_transit_headways : True 
-build_bike_network : False
-save_network_files : True  
-create_emme_network: True
-export_build_files: True
-emme_folder_name: EMME
-emmebank_title : networks
-modes_file: inputs\modes.txt
-transit_vehicle_file: inputs\vehicles.txt
-submode_dict : { 'b': 'bus', 
-                 'c': 'commuter_rail',
-                 'r': 'light_rail',
-                 'f': 'ferry',
-                 'p': 'express',
-                 'x': 'frequent',
-                 'z': 'brt'}
-
-# Bike Network
-elev_conversion: 3.28084    # Convert raster elevation from meters to feet
-raster_file_path: R:\e2projects_two\SoundCast\Inputs\slope\dem30m.tif
-ferry_link_factor: 2.0
