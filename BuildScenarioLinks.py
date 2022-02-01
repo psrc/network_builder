@@ -246,6 +246,8 @@ class BuildScenarioLinks(object):
         edges.trkc1 = edges[look_up_dict['trkc1'] + self.time_period]
         edges.trkc2 = edges[look_up_dict['trkc2'] + self.time_period]
         edges.trkc3 = edges[look_up_dict['trkc3'] + self.time_period]
+        edges.ttf = edges[look_up_dict['ttf']]
+
         return edges
 
     def _configure_hov_attributes(self, edges):

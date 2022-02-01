@@ -291,13 +291,21 @@ if __name__ == '__main__':
                 stops_df['x'] = stops_df.geometry.x
                 stops_df['y'] = stops_df.geometry.y
                 df = df.append(stops_df[['submode','x','y','PSRCJunctID']])
+                
+                # Now Street Car
+                transit_edges_submode = gdf_TransitLines[gdf_TransitLines['TransitType'] == 4]
+                stops_df = gdf_TransitPoints[gdf_TransitPoints['LineID'].isin(transit_edges_submode['LineID'].values)]
+                stops_df['submode'] = 'y'
+                stops_df['x'] = stops_df.geometry.x
+                stops_df['y'] = stops_df.geometry.y
+                df = df.append(stops_df[['submode','x','y','PSRCJunctID']])
 
                 df = df.groupby(['submode','PSRCJunctID']).max().reset_index()
                 for submode, colname in config['submode_dict'].items(): 
                     df.loc[df['submode'] == submode, colname] = 1
                 df.fillna(0, inplace=True)
                 df.drop('submode', axis=1, inplace=True)
-                df = df.groupby('PSRCJunctID').max().reset_index()
+                #df = df.groupby('PSRCJunctID').max().reset_index()
                 df.to_csv(os.path.join(build_file_folder,'transit_stops.csv'), index=False)
             
             if config['build_bike_network']:    # Only run this once
@@ -375,6 +383,8 @@ if __name__ == '__main__':
                 path = os.path.join(build_file_folder, 'extra_attributes', time_period.lower() + '_link_attributes.in')
                 my_project.export_extra_attributes(['LINK'], path)
                 my_project.export_extra_attributes(['NODE'], path)
+                if route_id_list:
+                    my_project.export_extra_attributes(['TRANSIT_LINE'], path)
 
                 path = os.path.join(build_file_folder, 'shape', time_period.lower() + '_shape.in')
                 my_project.export_shape(path)

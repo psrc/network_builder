@@ -343,7 +343,7 @@ class FlagNetworkFromProjects(object):
         merged_projects.set_index('PSRCEdgeID', inplace=True)
 
         merged_projects = merged_projects[
-            self.config['project_update_columns'] + self.config['dir_columns']]
+            self.config['project_columns'] + self.config['dir_columns']]
         scenario_edges.set_index('PSRCEdgeID', inplace=True)
 
         # Deal with edges that are updated by more than one project
@@ -360,7 +360,7 @@ class FlagNetworkFromProjects(object):
             # Dict to hold correct attributes for each edge
             row_dict = {'PSRCEdgeID' : edge_id}
             edges = multiple_projects[multiple_projects['PSRCEdgeID']==edge_id]
-            for col in self.config['dir_columns']:
+            for col in self.config['dir_columns']+ self.config['project_update_columns']:
                 # If all values are -1
                 if max(edges[col].values)==-1:
                     row_dict[col] = -1

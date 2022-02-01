@@ -17,7 +17,7 @@ file_gdb_path: T:/2021September/Stefan/network.gdb
 
 # Standard user params:
 
-output_dir: E:/networks/test
+output_dir: E:/networks/capacity_projects_removed
 
 number_of_pools: 12
 
@@ -38,13 +38,12 @@ time_periods: ['AM','MD','PM','EV','NI']
 
 
 # Project/Future network params
-update_network_from_projects : True 
+update_network_from_projects : True
 
-scenario_name: constrained_2050 #as defined in the tblProjectsInScenarios table
+scenario_name: remove_capacity_projects #as defined in the tblProjectsInScenarios table
 
 projects_version_year : 2022
 
-number_of_pools: 12
 
 # Facilities where slope should be calculated; slope of 0 is assumed otherwise
 bike_facility_types : [5, 6, 7, 8, 9, 10, 11]
@@ -73,6 +72,7 @@ submode_dict : { 'b': 'bus',
                  'f': 'ferry',
                  'p': 'express',
                  'x': 'frequent',
+                 'y': 'street_car',
                  'z': 'brt'}
 
 # Bike Network
@@ -103,9 +103,9 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'upslp','bkfac','toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3']
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'upslp','bkfac', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'FGTS', 'ttf']
   'NODE' : ['lr_walk', 'hdwfr', 'wait', 'invt']
-  'TRANSIT_LINE' : ['route_code', 'TransitType']
+  'TRANSIT_LINE' : ['TransitType']
 
 # Directional attributes used for project updates & network thinning.
 dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLanesGPNI', 'JILanesGPAM', 
@@ -132,13 +132,16 @@ dir_toll_columns : ['IJtollSOVAM',
 non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
-project_update_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway', 'InServiceDate']
+project_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway', 'InServiceDate']
 
-intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'geometry', 'projRteID', 'Processing_x']
+# Non directional attributes that can be updated by a project
+project_update_columns : ['Oneway']
 
-emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2','trkc3']
+intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'geometry', 'projRteID', 'Processing_x']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'is_managed','bkfac']
+emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'ttf']
+
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed','bkfac']
 
 emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk',  'hdwfr', 'wait', 'invt']
 
@@ -171,6 +174,7 @@ walk_links:
   trkc1: 0
   trkc2: 0 
   trkc3: 0
+  ttf: 0
 
 weave_links:
   direction: 1
@@ -190,6 +194,7 @@ weave_links:
   trkc1: 0
   trkc2: 0 
   trkc3: 0
+  ttf: 0
 
 standard_links:
   direction: 1
@@ -208,6 +213,7 @@ standard_links:
   trkc1: IJtollTrkLt
   trkc2: IJtollTrkMed 
   trkc3: IJtollTrkHvy
+  ttf: IJLanesTR
 
 bat_links:
   vdf: 9

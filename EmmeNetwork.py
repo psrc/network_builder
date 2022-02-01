@@ -71,7 +71,7 @@ class EmmeNetwork(object):
                 #print (link.modes)
                 emme_link = network.create_link(link.i, link.j, link.modes.strip())
                 emme_link.type = int(link.type)
-                emme_link.num_lanes = int(link.lanes)
+                emme_link.num_lanes = float(link.lanes)
                 emme_link.length = link.length
                 emme_link.volume_delay_func = int(link.vdf)
                 emme_link.data1 = int(link.ul1)
@@ -118,6 +118,8 @@ class EmmeNetwork(object):
                 emme_line.headway = line['Headway_' + self.time_period]
                 emme_line.data1 = line.Processing
                 emme_line.data3 = line.Operator 
+                for att in self.config['extra_attributes']['TRANSIT_LINE']:
+                    emme_line['@' + att.lower()] = line[att]
 
             x = 0
             for line in network.transit_lines():
