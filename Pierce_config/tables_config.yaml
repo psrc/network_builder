@@ -1,0 +1,23 @@
+mode_attributes: TRANSPLN.modeAttributes_evw
+
+mode_tolls: TRANSPLN.modeTolls_evw
+
+edges: TRANSPLN.TransRefEdges_evw
+
+transit_lines: TRANSPLN.TransitLines_evw
+
+transit_points: TRANSPLN.TransitPoints_evw
+
+turn_movements: TRANSPLN.TurnMovements_evw
+
+junctions: TRANSPLN.TransRefJunctions_evw
+
+transit_frequencies: TRANSPLN.transitFrequency_evw
+
+project_routes: TRANSPLN.ProjectRoutes_evw
+
+projects_in_scenarios: TRANSPLN.tblProjectsInScenarios_evw
+
+project_attributes: TRANSPLN.tblLineProjects_evw
+
+point_events: TRANSPLN.evtPointProjectOutcomes_evw
