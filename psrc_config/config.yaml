@@ -36,6 +36,8 @@ max_regular_zone: 3700
 
 time_periods: ['AM','MD','PM','EV','NI']
 
+add_channelization: False
+
 
 # Project/Future network params
 update_network_from_projects : True
@@ -57,7 +59,7 @@ project_buffer_dist : 1
 hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
-build_bike_network : True
+build_bike_network : False
 save_network_files : True  
 create_emme_network: True
 export_build_files: True
