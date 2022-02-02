@@ -14,7 +14,7 @@ import yaml
 from log_controller import timed
 import time
 import sys
-
+import configuration
 
 def read_from_sde(connection_string, feature_class_name, version,
                   crs={'init': 'epsg:2285'}, is_table=False):
@@ -55,8 +55,8 @@ def read_from_sde(connection_string, feature_class_name, version,
 
     return gdf
 
-config = yaml.safe_load(open("config.yaml"))
-tables_config = yaml.safe_load(open("tables_config.yaml"))
+config = yaml.safe_load(open(os.path.join(configuration.args.configs_dir, "config.yaml")))
+tables_config = yaml.safe_load(open(os.path.join(configuration.args.configs_dir, "tables_config.yaml")))
 model_year = config['model_year']
 crs = config['crs']
 

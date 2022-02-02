@@ -34,6 +34,17 @@ import json
 import shutil
 from shutil import copy2 as shcopy
 import multiprocessing as mp
+import configuration
+
+
+def add_run_args(parser, multiprocess=True):
+    """
+    Run command args
+    """
+    parser.add_argument('-c', '--configs_dir',
+                        type=str,
+                        metavar='PATH',
+                        help='path to configs dir')
 
 def nodes_from_turns(turns, edges):
     edge_list = turns.FrEdgeID.tolist() + turns.ToEdgeID.tolist()
@@ -79,7 +90,7 @@ if __name__ == '__main__':
     pd.options.display.float_format = '{:.4f}'.format
     mp.freeze_support()
 
-    config = yaml.safe_load(open("config.yaml"))
+    config = yaml.safe_load(open(os.path.join(configuration.args.configs_dir, "config.yaml")))
 
     logger = log_controller.setup_custom_logger('main_logger')
     logger.info('------------------------Network Builder Started----------------------------------------------')
