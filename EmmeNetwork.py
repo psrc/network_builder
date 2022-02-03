@@ -13,6 +13,7 @@ import log_controller
 
 class EmmeNetwork(object):
     def __init__(self, emme_project, time_period, transit_lines, model_links, model_nodes, turns, config, transit_segments = None):
+        model_links.fillna(0, inplace = True)
         self.emme_project = emme_project
         self.time_period = time_period
         self.links = model_links
