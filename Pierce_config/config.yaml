@@ -106,7 +106,7 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'upslp','bkfac', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'FGTS', 'ttf']
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'upslp','bkfac', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'FGTS', 'ttf', 'Channelization']
   'NODE' : ['lr_walk', 'hdwfr', 'wait', 'invt']
   'TRANSIT_LINE' : ['TransitType']
 
@@ -132,7 +132,7 @@ dir_toll_columns : ['IJtollSOVAM',
 'JItollTrkHvyPM', 'JItollTrkHvyEV','JItollTrkHvyNI']
 
 # Non-Directional attributes used for networkt thnning.
-non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
+non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x', 'Channelization']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
 project_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway', 'InServiceDate']
@@ -140,11 +140,11 @@ project_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway'
 # Non directional attributes that can be updated by a project
 project_update_columns : ['Oneway']
 
-intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'geometry', 'projRteID', 'Processing_x']
+intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'geometry', 'projRteID', 'Processing_x', 'Channelization']
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'ttf']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed','bkfac']
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed','bkfac', 'Channelization']
 
 emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk',  'hdwfr', 'wait', 'invt']
 
