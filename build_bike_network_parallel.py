@@ -5,6 +5,8 @@ import multiprocessing as mp
 from shapely.geometry import LineString, Point
 import log_controller
 import yaml
+import configuration
+import os
 
 def calc_slope_parallel(link_id):
 
@@ -14,7 +16,7 @@ def calc_slope_parallel(link_id):
     # slope points
     _elev_pts = global_elev_dict[link_id]
 
-    config = yaml.safe_load(open("config.yaml"))
+    config = yaml.safe_load(open(os.path.join(configuration.args.configs_dir, "config.yaml")))
     crs = {'init' : config['crs']['init']}
 
     # Generate two geodataframes; one for an initial point, the other for the subsequent point

@@ -5,14 +5,10 @@ c Scenario 1003:
 t modes
 c id description mode_type colour cost_time_coeff cost_distance_coeff energy_time_coeff energy_distance_coeff speed_factor
 a a 'Auto      ' 1   1   1.00   1.00   1.00   1.00
-a s 'NoTollSOV ' 4   1
-a e 'TollSOV   ' 4   1
-a h 'NoTollHOV2' 4   1
-a d 'TollHOV2  ' 4   1
-a i 'NoTollHOV3' 4   1
-a m 'TollHOV3  ' 4   1
-a j 'NoTollVans' 4   1
-a g 'TollVans  ' 4   1
+a s 'SOV       ' 4   1
+a h 'HOV2      ' 4   1
+a i 'HOV3      ' 4   1
+a j 'Vans      ' 4   1
 a v 'LgtTruck  ' 4   1
 a u 'MedTruck  ' 4   1
 a t 'HvyTruck  ' 4   1

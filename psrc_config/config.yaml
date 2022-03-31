@@ -7,7 +7,7 @@ server: AWS-Prod-SQL\Sockeye
 
 database: OSMTest
 
-version: "'DBO.Stefan'"
+version: "'DBO.Kris2'"
 
 
 # The following should be filled out if using a 'file_gdb' as data_source
@@ -17,11 +17,11 @@ file_gdb_path: T:/2021September/Stefan/network.gdb
 
 # Standard user params:
 
-output_dir: E:/networks/capacity_projects_removed
+output_dir: E:/networks/new_2018_modes_test
 
 number_of_pools: 12
 
-model_year: 2050
+model_year: 2018
 
 crs:
   'init' : 'EPSG:2285'
@@ -40,9 +40,9 @@ add_channelization: False
 
 
 # Project/Future network params
-update_network_from_projects : True
+update_network_from_projects : False
 
-scenario_name: remove_capacity_projects #as defined in the tblProjectsInScenarios table
+scenario_name: constrained_2050 #as defined in the tblProjectsInScenarios table
 
 projects_version_year : 2022
 
@@ -59,7 +59,7 @@ project_buffer_dist : 1
 hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
-build_bike_network : False
+build_bike_network : True
 save_network_files : True  
 create_emme_network: True
 export_build_files: True
@@ -182,7 +182,7 @@ weave_links:
   direction: 1
   i: NewINode
   j: NewJNode
-  modes: 'asehdimjgvutbpwl'
+  modes: 'ashijvutbpwl'
   length : 0.01
   type: 90
   lanes: 1
@@ -239,16 +239,16 @@ hov_lanes:
   14: 1
 
 hov_modes:
-  1: 'ahijbdmgp'
-  2: 'aijbmgp'
+  1: 'ahijbp'
+  2: 'aijbp'
   3: 'abp'
   4: 'abp'
-  5: 'ashijbedmgp'
-  6: 'ashijvbedmgp'
-  7: 'ahijbdmgp'
-  12: 'ashijbedmgp'
-  13: 'ashijvbedmgp'
-  14: 'ashijvbedmgp'
+  5: 'ashijbp'
+  6: 'ashijvbp'
+  7: 'ahijbp'
+  12: 'ashijbp'
+  13: 'ashijvbp'
+  14: 'ashijvbp'
 
 reverse_walk_link_facility_types : [3, 5, 6, 7, 8, 9]
 standard_facility_types : [1, 2, 3, 4, 5, 6, 7, 8, 9]
