@@ -7,10 +7,11 @@ import os, sys, errno
 import yaml
 import shutil
 from shutil import copy2 as shcopy
+import configuration
 
 #sys.path.append(os.getcwd())
 
-config = yaml.safe_load(open("config.yaml"))
+config = yaml.safe_load(open(os.path.join(configuration.args.configs_dir, "config.yaml")))
 
 
 

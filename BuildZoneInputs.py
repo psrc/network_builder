@@ -32,14 +32,14 @@ class BuildZoneInputs(object):
         zone_nodes_df = zone_nodes_df.sort_values(by='i')
 
         # create an ordinal/index column. Daysim is 1 based. 
-        zone_nodes_df['zone_ordinal'] = [i for i in xrange(1, len(zone_nodes_df) + 1)]
+        zone_nodes_df['zone_ordinal'] = [i for i in range(1, len(zone_nodes_df) + 1)]
 
         # create a cost columnn for park and rides, set to 0 for now
         zone_nodes_df['Cost'] = 0
 
         # column for non park & rides, internal zones
         zone_nodes_df['Dest_eligible'] = 0
-        zone_nodes_df.ix[zone_nodes_df['i'] <= self.config['max_regular_zone'], 'Dest_eligible'] = 1
+        zone_nodes_df.loc[zone_nodes_df['i'] <= self.config['max_regular_zone'], 'Dest_eligible'] = 1
 
         # rename some columns for the taz file
         zone_nodes_df = zone_nodes_df.rename(columns={'i': 'Zone_id', 'P_RStalls': 'Capacity', 'Processing' : 'External'})

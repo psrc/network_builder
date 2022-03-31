@@ -1,6 +1,10 @@
-from pymssql import connect
+import os
+import pyodbc
+import sqlalchemy
+import time
 from pandas import read_sql
-from shapely.wkt import loads
+from shapely import wkt
+from shapely.geometry import Point
 import geopandas as gpd
 from geopandas import GeoDataFrame
 import pandas as pd
@@ -10,136 +14,254 @@ import yaml
 from log_controller import timed
 import time
 import sys
+import configuration
 
-def rd_sql(server, database, table, version,  col_names=None, where_col=None, where_val=None, geo_col=False, epsg=2193, export=False, path='save.csv'):
+def read_from_sde(connection_string, feature_class_name, version,
+                  crs={'init': 'epsg:2285'}, is_table=False):
     """
-    Imports data from MSSQL database, returns GeoDataFrame. Specific columns can be selected and specific queries within columns can be selected. Requires the pymssql package, which must be separately installed.
-    Arguments:
-    server -- The server name (str). e.g.: 'SQL2012PROD03'
-    database -- The specific database within the server (str). e.g.: 'LowFlows'
-    table -- The specific table within the database (str). e.g.: 'LowFlowSiteRestrictionDaily'
-    col_names -- The column names that should be retrieved (list). e.g.: ['SiteID', 'BandNo', 'RecordNo']
-    where_col -- The sql statement related to a specific column for selection (must be formated according to the example). e.g.: 'SnapshotType'
-    where_val -- The WHERE query values for the where_col (list). e.g. ['value1', 'value2']
-    geo_col -- Is there a geometry column in the table?
-    epsg -- The coordinate system (int)
-    export -- Should the data be exported
-    path -- The path and csv name for the export if 'export' is True (str)
+    Returns the specified feature class as a geodataframe from ElmerGeo.
+
+    Parameters
+    ----------
+    connection_string : SQL connection string that is read by geopandas
+                        read_sql function
+
+    feature_class_name: the name of the featureclass in PSRC's ElmerGeo
+                        Geodatabase
+
+    cs: cordinate system
     """
-    if col_names is None and where_col is None:
-        stmt1 = 'SELECT * FROM ' + table
-    elif where_col is None:
-        stmt1 = 'SELECT ' + str(col_names).replace('\'', '"')[1:-1] + ' FROM ' + table
+
+    engine = sqlalchemy.create_engine(connection_string)
+    con = engine.connect()
+    con.execute("sde.set_current_version {0}".format(version))
+
+    if is_table:
+        gdf = pd.read_sql('select * from %s' %
+                          (feature_class_name), con=con)
+        con.close()
+
     else:
-        stmt1 = 'SELECT * FROM ' + table + ' WHERE ' + str([where_col]).replace('\'', '"')[1:-1] + ' IN (' + str(where_val)[1:-1] + ')'
-    conn = connect(server, database=database)
-    cursor = conn.cursor()
-    cursor.execute("sde.set_current_version %s", version)
-    df = read_sql(stmt1, conn)
+        df = pd.read_sql('select *, Shape.STAsText() as geometry from %s' %
+                         (feature_class_name), con=con)
+        con.close()
 
-    ## Read in geometry if required
-    if geo_col:
-        geo_col_stmt = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=" + "\'" + table + "\'" + " AND DATA_TYPE='geometry'"
-        geo_col = str(read_sql(geo_col_stmt, conn).iloc[0,0])
-        if where_col is None:
-            stmt2 = 'SELECT ' + geo_col + '.STGeometryN(1).ToString()' + ' FROM ' + table
-        else:
-            stmt2 = 'SELECT ' + geo_col + '.STGeometryN(1).ToString()' + ' FROM ' + table + ' WHERE ' + str([where_col]).replace('\'', '"')[1:-1] + ' IN (' + str(where_val)[1:-1] + ')'
-        df2 = read_sql(stmt2, conn)
-        df2.columns = ['geometry']
-        try:
+        df['geometry'] = df['geometry'].apply(wkt.loads)
+        gdf = gpd.GeoDataFrame(df, geometry='geometry')
+        gdf.crs = crs
+        cols = [col for col in gdf.columns if col not in
+                ['Shape', 'GDB_GEOMATTR_DATA', 'SDE_STATE_ID']]
+        gdf = gdf[cols]
 
-        #test = np.array_split(df2, 3)
-            geometry = map(lambda x: loads(x), df2.geometry) 
-        #geometry2 = map(lambda x: loads(x), test[2].geometry)
-        #geometry = map(loads, df2.geometry)
-        #geometry = [loads(x) for x in df2.geometry]
-        except:
-            print ('Loading Geometry for %s failed. Check to make there are no 0 length features or feature that contain M values. Exiting Program!' % table)
+    return gdf
 
-        df = GeoDataFrame(df, geometry=geometry, crs={'init' :'epsg:' + str(epsg)})
-        if 'Shape' in df.columns:
-            df.drop(['Shape'], axis = 1, inplace = True)
-
-    if export:
-        df.to_csv(path, index=False)
-
-    conn.close()
-    return(df)
-
-config = yaml.safe_load(open("config.yaml"))
-
-data_path = config['data_path']
+config = yaml.safe_load(open(os.path.join(configuration.args.configs_dir, "config.yaml")))
+tables_config = yaml.safe_load(open(os.path.join(configuration.args.configs_dir, "tables_config.yaml")))
 model_year = config['model_year']
-server = config['server']
-database = config['database']
-version = config['version']
-epsg = config['epsg']
+crs = config['crs']
 
-# modeAttributes
-df_modeAttributes = rd_sql(server, database, 'modeAttributes_evw', version, None, None, None, False, epsg=epsg)
+if config['data_source_type'] == 'enterprise_gdb':
+    connection_string = '''mssql+pyodbc://%s/%s?driver=SQL Server?
+    Trusted_Connection=yes''' % (config['server'], config['database'])
+
+    version = config['version']
+
+    # modeAttributes
+    df_modeAttributes = read_from_sde(connection_string,
+                                      tables_config['mode_attributes'],
+                                      version, crs=crs, is_table=True)
+
+    df_tolls = read_from_sde(connection_string,
+                             tables_config['mode_tolls'],
+                             version, crs=crs, is_table=True)
+
+    gdf_TransRefEdges = read_from_sde(connection_string,
+                                      tables_config['edges'],
+                                      version, crs=crs, is_table=False)
+
+    gdf_TransitLines = read_from_sde(connection_string,
+                                     tables_config['transit_lines'],
+                                     version, crs=crs, is_table=False)
+
+    gdf_TransitPoints = read_from_sde(connection_string,
+                                      tables_config['transit_points'],
+                                      version, crs=crs, is_table=False)
+    gdf_TurnMovements = read_from_sde(connection_string,
+                                      tables_config['turn_movements'],
+                                      version, crs=crs, is_table=False)
+
+    # Juncions
+    gdf_Junctions = read_from_sde(connection_string,
+                                  tables_config['junctions'],
+                                  version, crs=crs, is_table=False)
+
+    if config['build_transit_headways']:
+        df_transit_frequencies = read_from_sde(connection_string,
+                                               tables_config[
+                                                   'transit_frequencies'],
+                                               version, crs=crs,
+                                               is_table=True)
+
+    if config['update_network_from_projects']:
+        gdf_ProjectRoutes = read_from_sde(connection_string,
+                                          tables_config['project_routes'],
+                                          version, crs=crs, is_table=False)
+
+        df_tblProjectsInScenarios = read_from_sde(connection_string,
+                                                  tables_config[
+                                                      'projects_in_scenarios'],
+                                                  version, crs=crs,
+                                                  is_table=True)
+
+        df_tblLineProjects = read_from_sde(connection_string,
+                                           tables_config['project_attributes'],
+                                           version, crs=crs, is_table=True)
+
+        # point events (park and rides)
+        df_evtPointProjectOutcomes = read_from_sde(
+                                                   connection_string,
+                                                   tables_config[
+                                                       'point_events'],
+                                                   version, crs=crs,
+                                                   is_table=True)
+
+    else:
+        gdf_ProjectRoutes = None
+        df_tblProjectsInScenarios = None
+        df_evtPointProjectOutcomes = None
+
+else:
+    df_modeAttributes = gpd.read_file(config['file_gdb_path'],
+                                      layer=tables_config['mode_attributes'])
+
+    df_modeAttributes = df_modeAttributes.drop('geometry', 1)
+
+    df_tolls = gpd.read_file(config['file_gdb_path'],
+                             layer=tables_config['mode_tolls'])
+    df_tolls = df_tolls.drop('geometry', 1)
+
+    gdf_TransRefEdges = gpd.read_file(config['file_gdb_path'],
+                                      layer=tables_config['edges'], crs=crs)
+
+    gdf_TransRefEdges = gdf_TransRefEdges.explode()
+    gdf_TransRefEdges.index = gdf_TransRefEdges.index.droplevel(1)
+
+    gdf_TransitLines = gpd.read_file(config['file_gdb_path'],
+                                     layer=tables_config[
+                                         'transit_lines'], crs=crs)
+
+    gdf_TransitLines = gdf_TransitLines.explode()
+    gdf_TransitLines.index = gdf_TransitLines.index.droplevel(1)
+
+    gdf_TransitPoints = gpd.read_file(config['file_gdb_path'],
+                                      layer=tables_config[
+                                          'transit_points'], crs=crs)
+
+    gdf_TurnMovements = gpd.read_file(config['file_gdb_path'],
+                                      layer=tables_config[
+                                          'turn_movements'], crs=crs)
+
+    gdf_TurnMovements = gdf_TurnMovements.explode()
+    gdf_TurnMovements.index = gdf_TurnMovements.index.droplevel(1)
+
+    # Juncions
+    gdf_Junctions = gpd.read_file(config['file_gdb_path'],
+                                  layer=tables_config['junctions'], crs=crs)
+
+    if config['build_transit_headways']:
+        df_transit_frequencies = gpd.read_file(config['file_gdb_path'],
+                                               layer=tables_config[
+                                                   'transit_frequencies'])
+
+        df_transit_frequencies = df_transit_frequencies.drop('geometry', 1)
+
+    if config['update_network_from_projects']:
+        gdf_ProjectRoutes = gpd.read_file(config['file_gdb_path'],
+                                          layer=tables_config[
+                                              'project_routes'], crs=crs)
+
+        gdf_ProjectRoutes = gdf_ProjectRoutes.explode()
+        gdf_ProjectRoutes.index = gdf_ProjectRoutes.index.droplevel(1)
+
+        df_tblProjectsInScenarios = gpd.read_file(
+            config['file_gdb_path'], layer=tables_config[
+                'projects_in_scenarios'])
+
+        df_tblProjectsInScenarios = df_tblProjectsInScenarios.drop(
+            'geometry', 1)
+
+        df_tblLineProjects = gpd.read_file(config['file_gdb_path'],
+                                           layer=tables_config[
+                                               'project_attributes'])
+
+        df_tblLineProjects = df_tblLineProjects.drop('geometry', 1)
+        # point events (park and rides)
+        df_evtPointProjectOutcomes = gpd.read_file(
+                                                   config['file_gdb_path'],
+                                                   layer=tables_config[
+                                                       'point_events'])
+
+        df_evtPointProjectOutcomes = df_evtPointProjectOutcomes.drop(
+            'geometry', 1)
+    else:
+        gdf_ProjectRoutes = None
+        df_tblProjectsInScenarios = None
+        df_evtPointProjectOutcomes = None
+
 
 # Tolls
-df_tolls = rd_sql(server, database, 'modeTolls_evw', version, None, None, None, False, epsg=epsg)
 df_tolls = df_tolls[df_tolls['InServiceDate'] == model_year]
 df_tolls = df_tolls[config['toll_columns'] + config['dir_toll_columns']]
 
 # Edges
-gdf_TransRefEdges = rd_sql(server, database, 'TransRefEdges_evw', version, None, None, None, True, epsg=epsg)
 gdf_TransRefEdges = gdf_TransRefEdges[gdf_TransRefEdges.length > 0]
+gdf_TransRefEdges = gdf_TransRefEdges.merge(df_modeAttributes,
+                                            how='left', on='PSRCEdgeID')
 
+gdf_TransRefEdges = gdf_TransRefEdges.merge(df_tolls,
+                                            how='left', on='PSRCEdgeID')
 
-#gdf_TransRefEdges = gpd.read_file(os.path.join(data_path, 'test.shp'))
-gdf_TransRefEdges = gdf_TransRefEdges.merge(df_modeAttributes, how = 'left', on = 'PSRCEdgeID')
+fill_colls = [col for col in gdf_TransRefEdges.columns
+              if 'geom' not in col]
+for col in fill_colls:
+    gdf_TransRefEdges[col].fillna(0, inplace=True)
 
-gdf_TransRefEdges = gdf_TransRefEdges.merge(df_tolls, how = 'left', on = 'PSRCEdgeID')
-gdf_TransRefEdges.fillna(0, inplace = True)
+# TransitLines
+gdf_TransitLines = gdf_TransitLines[
+                                    gdf_TransitLines.InServiceDate ==
+                                    model_year]
 
+# TransitPoints
+gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(
+    gdf_TransitLines.LineID)]
 
-## TransitLines
-gdf_TransitLines = rd_sql(server, database, 'TransitLines_evw', version, None, None, None, True, epsg=epsg)
-gdf_TransitLines = gdf_TransitLines[gdf_TransitLines.InServiceDate==model_year]
-
-### TransitPoints
-gdf_TransitPoints = rd_sql(server, database, 'TransitPoints_evw', version, None, None, None, True, epsg=epsg)
-gdf_TransitPoints = gdf_TransitPoints[gdf_TransitPoints.LineID.isin(gdf_TransitLines.LineID)]
-
-### Projects
+# Projects
 if config['update_network_from_projects']:
-    #gdf_ProjectRoutes = gpd.read_file(os.path.join(data_path, 'ProjectRoutes.shp'))
-    gdf_ProjectRoutes = rd_sql(server, database, 'ProjectRoutes_evw', version, None, 'version', [2018], True, epsg=epsg)
-    gdf_ProjectRoutes['FacilityType'] = gdf_ProjectRoutes['Change_Type'].astype(int)
-    
-    #scenarios:
-    df_tblProjectsInScenarios = rd_sql(server, database, 'tblProjectsInScenarios_evw', version, None, 'ScenarioName', [config['scenario_name']], False, epsg=epsg)
-    gdf_ProjectRoutes = gdf_ProjectRoutes[gdf_ProjectRoutes['intProjID'].isin(df_tblProjectsInScenarios['intProjID'])]
+    gdf_ProjectRoutes = gdf_ProjectRoutes[gdf_ProjectRoutes['version'] ==
+                                          config['projects_version_year']]
+
+    gdf_ProjectRoutes['FacilityType'] = gdf_ProjectRoutes[
+        'Change_Type'].astype(int)
+
+    # scenarios:
+    df_tblProjectsInScenarios = df_tblProjectsInScenarios[
+        df_tblProjectsInScenarios['ScenarioName'] ==
+        config['scenario_name']]
+
+    gdf_ProjectRoutes = gdf_ProjectRoutes[
+        gdf_ProjectRoutes['intProjID'].isin(
+            df_tblProjectsInScenarios['intProjID'])]
 
     # project attributes
-    df_tblLineProjects = rd_sql(server, database, 'tblLineProjects_evw', version, None, None, None, False, epsg=epsg)
-    df_tblLineProjects = df_tblLineProjects[df_tblLineProjects.projRteID.isin(gdf_ProjectRoutes.projRteID)]
+    df_tblLineProjects = df_tblLineProjects[
+        df_tblLineProjects.projRteID.isin(gdf_ProjectRoutes.projRteID)]
 
-    # point events (park and rides)
-    df_evtPointProjectOutcomes = rd_sql(server, database, 'evtPointProjectOutcomes', version, None, None, None, False, epsg=epsg)
-
-    gdf_ProjectRoutes = gdf_ProjectRoutes.merge(df_tblLineProjects, how = 'left', on = 'projRteID')
-    gdf_ProjectRoutes = gdf_ProjectRoutes.loc[gdf_ProjectRoutes['InServiceDate'] <= config['model_year']]
-    # drop InServiceDate as it is on edges
-    #gdf_ProjectRoutes.drop(['InServiceDate'], axis = 1, inplace = True)
-
-else:
-    gdf_ProjectRoutes = None
-    df_tblProjectsInScenarios = None
-    df_evtPointProjectOutcomes = None
+    gdf_ProjectRoutes = gdf_ProjectRoutes.merge(df_tblLineProjects,
+                                                how='left', on='projRteID')
+    gdf_ProjectRoutes = gdf_ProjectRoutes.loc[
+        gdf_ProjectRoutes['InServiceDate'] <= config['model_year']]
 
 
-## Turns
-gdf_TurnMovements = rd_sql(server, database, 'TurnMovements_evw', version, None, None, None, True, epsg=epsg)
-gdf_TurnMovements = gdf_TurnMovements[gdf_TurnMovements['InServiceDate'] <= config['model_year']]
-
-## Juncions
-gdf_Junctions = rd_sql(server, database, 'TransRefJunctions_evw', version, None, None, None, True, epsg=epsg)
-
-# Transit Frequencies:
-if config['build_transit_headways']:
-    #df_transit_frequencies = pd.read_csv(os.path.join(data_path, 'transitFrequency.csv'))
-    df_transit_frequencies = rd_sql(server, database, 'transitFrequency_evw', version, None, None, None, False, epsg=epsg)
+# Turns
+gdf_TurnMovements = gdf_TurnMovements[
+    gdf_TurnMovements['InServiceDate'] <= config['model_year']]

@@ -18,7 +18,7 @@ class TransitHeadways(object):
         frequency_df['id'] = frequency_df['LineID']
         col_list = ['LineID', 'id']
 
-        for k, v in self.config['transit_headway_mapper'].iteritems():
+        for k, v in self.config['transit_headway_mapper'].items():
             frequency_df[k] = frequency_df[v].sum(axis=1)
             frequency_df[k] = (60*len(v))/frequency_df[k]
             frequency_df[k] = frequency_df[k].replace(np.inf, 0)

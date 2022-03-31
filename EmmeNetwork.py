@@ -13,11 +13,12 @@ import log_controller
 
 class EmmeNetwork(object):
     def __init__(self, emme_project, time_period, transit_lines, model_links, model_nodes, turns, config, transit_segments = None):
+        model_links.fillna(0, inplace = True)
         self.emme_project = emme_project
         self.time_period = time_period
         self.links = model_links
         self.nodes = model_nodes
-        self.turns = turns[turns['Function' + time_period.upper()] <>99]
+        self.turns = turns[turns['Function' + time_period.upper()] !=99]
         self.transit_segments = transit_segments
         #transit_lines = transit_lines[transit_lines.InServiceD==2014]
         transit_lines = transit_lines.loc[transit_lines['Headway_' + self.time_period] > 0]
@@ -39,13 +40,13 @@ class EmmeNetwork(object):
     def load_network(self):
         scenario_id = self.config['time_periods'].index(self.time_period) + 1
         scenario = self._create_scenario(self.time_period, scenario_id)
-        self.emme_project.process_modes(self.config['data_path'] + '\\' +  self.config['modes_file'], scenario)
-        self.emme_project.process_vehicles(self.config['data_path'] + '\\' +  self.config['transit_vehicle_file'], scenario)
+        self.emme_project.process_modes(self.config['modes_file'], scenario)
+        self.emme_project.process_vehicles(self.config['transit_vehicle_file'], scenario)
         #('inputs/scenario/networks/' + self.config['transit_vehicle_file'] , self.emme_project.bank.scenario(scenario_id))
         self._load_network_elements(scenario)
 
     def _create_extra_attributes(self, scenario):
-         for type, atts in self.config['extra_attributes'].iteritems():
+         for type, atts in self.config['extra_attributes'].items():
              for att in atts:
                  att = '@' + att
                  scenario.create_extra_attribute(type, att.lower())
@@ -67,9 +68,14 @@ class EmmeNetwork(object):
         for link in self.links.iterrows():
             link = link[1]
             if int(link.lanes) > 0:
-                emme_link = network.create_link(link.i, link.j, link.modes)
+                #print (link.i, link.j)
+                #print (link.modes)
+                emme_link = network.create_link(link.i, link.j, link.modes.strip())
                 emme_link.type = int(link.type)
-                emme_link.num_lanes = int(link.lanes)
+                if self.config['add_channelization']:
+                    emme_link.num_lanes = link.lanes + link.Channelization
+                else:
+                    emme_link.num_lanes = link.lanes
                 emme_link.length = link.length
                 emme_link.volume_delay_func = int(link.vdf)
                 emme_link.data1 = int(link.ul1)
@@ -116,12 +122,14 @@ class EmmeNetwork(object):
                 emme_line.headway = line['Headway_' + self.time_period]
                 emme_line.data1 = line.Processing
                 emme_line.data3 = line.Operator 
+                for att in self.config['extra_attributes']['TRANSIT_LINE']:
+                    emme_line['@' + att.lower()] = line[att]
 
             x = 0
             for line in network.transit_lines():
                 x = x + 1
                 for seg in line.segments():
-                    row = self.transit_segments.ix[seg.id]
+                    row = self.transit_segments.loc[seg.id]
                     seg.transit_time_func = row.ttf
                     if line.mode == 'f' or line.mode == 'c' or line.mode == 'r':
                         seg.allow_alightings = True

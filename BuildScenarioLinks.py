@@ -55,6 +55,9 @@ class BuildScenarioLinks(object):
 
         # configure ferry, rail
         network = self._configure_transit_links(network)
+
+        # configure BAT links
+        network = self._configure_BAT_links(network, self.config['bat_links'])
         
         # reverse reversibles?
         if self.reversible_switch_dir:
@@ -65,6 +68,12 @@ class BuildScenarioLinks(object):
         #create reverse walk links on one_way arterials/collectors
         reverse_walk_links = self._create_reverse_walk_links(network)
         reverse_walk_links = self._configure_emme_walk_attributes(reverse_walk_links, self.config['walk_links'])
+        
+        # find duplicate links due to OSM network having one-way streets sharing samee IJ JI
+        reverse_walk_links['id'] = reverse_walk_links.i.astype(str) + '-' + reverse_walk_links.j.astype(str)
+        network['id'] = network.i.astype(str) + '-' + network.j.astype(str)
+        reverse_walk_links = reverse_walk_links[~reverse_walk_links['id'].isin(network['id'])]
+
         network = pd.concat([network, reverse_walk_links])
         network.reset_index(drop = True, inplace=True)
         
@@ -74,10 +83,12 @@ class BuildScenarioLinks(object):
         network.update(weave_links)
 
         # cpnfigure HOT lane tolls
-        for k, v in self.config['hot_tolls'].iteritems():
+        for k, v in self.config['hot_tolls'].items():
             hot_links = network[(network['IJLanesHOV' + self.time_period] == k) & (network['is_managed'] == 1)]
             hot_links = self._configure_hot_lane_tolls(hot_links, v)
             network.update(hot_links)
+
+        network['bkfac'] = network['IJBikeFacility']
 
         network = network[self.config['emme_link_columns'] + self.config['additional_keep_columns']]
         network.i = network.i.astype(int)
@@ -150,8 +161,9 @@ class BuildScenarioLinks(object):
 
 
     def _create_reverse_walk_links(self, network):
-        reverse_walk_links = network[network.NewFacilityType.isin(self.config['reverse_walk_link_facility_types'])]
+        reverse_walk_links = network[network.FacilityType.isin(self.config['reverse_walk_link_facility_types'])]
         reverse_walk_links = reverse_walk_links[(reverse_walk_links['Oneway'] == 0) | (reverse_walk_links['Oneway'] == 1)]
+        reverse_walk_links = reverse_walk_links[reverse_walk_links['is_managed'] == 0]
         flipped_geom = reverse_walk_links.geometry.apply(self._flip_edges)
         reverse_walk_links.geometry.update(flipped_geom)
         cols = self._switch_attributes_dict()
@@ -234,6 +246,8 @@ class BuildScenarioLinks(object):
         edges.trkc1 = edges[look_up_dict['trkc1'] + self.time_period]
         edges.trkc2 = edges[look_up_dict['trkc2'] + self.time_period]
         edges.trkc3 = edges[look_up_dict['trkc3'] + self.time_period]
+        edges.ttf = edges[look_up_dict['ttf']]
+
         return edges
 
     def _configure_hov_attributes(self, edges):
@@ -260,6 +274,15 @@ class BuildScenarioLinks(object):
         edges.ul2 = np.where(edges['FacilityType'].isin(self.config['link_time_facility_types']), edges.Processing_x/1000.0, edges.ul2)
         return edges
 
+    def _configure_BAT_links(self, edges, look_up_dict):
+        # ID BAT lanes by there mode strng
+        modes = self.config['hov_modes'][3]
+        edges.vdf = np.where(edges['modes']==modes, look_up_dict['vdf'], edges.vdf)
+        #edges.FacilityType = np.where(edges['modes']==modes, 0, edges.FacilityType)
+        edges.ul1 = np.where(edges['modes']==modes, look_up_dict['ul1'], edges.ul1)
+        edges.ul3 = np.where(edges['modes']==modes, look_up_dict['ul3'], edges.ul3)
+        return edges
+
     def _validate_network(self, edges):
         if len(edges[edges['type'] == 0]) > 0:
             self._logger.warning('Warning: Field LinkType in TransRefEdges containes 0s. Recoding to 90.')
@@ -276,6 +299,13 @@ class BuildScenarioLinks(object):
         if empty_mode:
             for edge_id in empty_mode:
                 self._logger.warning('Warning: Edge %s mode field is blank. Please fix!' % (edge_id))
+
+        duplicates = edges[edges['id'].value_counts()>1]['id'].tolist()
+        if duplicates:
+            for duplicate in duplicates:
+                self._logger.warning('Warning: Edge %s has duplicates. Please fix!' % (duplicates))
+
+
         return edges
         
 

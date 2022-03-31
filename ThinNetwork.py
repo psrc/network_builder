@@ -26,11 +26,11 @@ class ThinNetwork(object):
         compare_cols = self.config['non_dir_columns'
                                    ] + self.config['dir_columns'] + self.config['dir_toll_columns']
 
-        compare_atts1 = {key: value for (key, value) in edge1.iteritems()
+        compare_atts1 = {key: value for (key, value) in edge1.items()
                          if key in compare_cols}
 
         if edge2_dir == 'IJ':
-            compare_atts2 = {key: value for (key, value) in edge2.iteritems()
+            compare_atts2 = {key: value for (key, value) in edge2.items()
                              if key in compare_cols}
 
             if compare_atts1 == compare_atts2:
@@ -40,11 +40,11 @@ class ThinNetwork(object):
 
         elif edge2_dir == 'JI':
             compare_atts2 = {key[1] + key[0] + key[2:]: value for
-                             (key, value) in edge2.iteritems() if
+                             (key, value) in edge2.items() if
                              key in self.config['dir_columns'] + self.config['dir_toll_columns']}
 
             compare_atts2.update({key: value for (key, value) in
-                                  edge2.iteritems() if key in
+                                  edge2.items() if key in
                                   self.config['non_dir_columns']})
             
             if compare_atts1 == compare_atts2:
@@ -77,7 +77,7 @@ class ThinNetwork(object):
         dup_edges_dict = dup_edges.groupby(['id']).apply(
             lambda x: list(x.PSRCEdgeID)).to_dict()
 
-        for node_seq, edge_ids in dup_edges_dict.iteritems():
+        for node_seq, edge_ids in dup_edges_dict.items():
             self._logger.info(
                  'Warning! Node sequence %s is represented '
                  'by more than one edge: %s. Please Fix!'
@@ -145,7 +145,7 @@ class ThinNetwork(object):
                             if G.has_edge(merged_row['INode'], merged_row['JNode']):
                                 compare_edge = G.get_edge_data(merged_row['INode'],merged_row['JNode'])
                                 if list(compare_edge['geometry'].coords) == x:
-                                    print 'True'
+                                    # print 'True'
                                     G.remove_edge(edges[0][0], edges[0][1])
                                     G.remove_edge(edges[1][0], edges[1][1])
                             else:
@@ -166,7 +166,7 @@ class ThinNetwork(object):
                                 compare_edge = G.get_edge_data(
                                     merged_row['INode'], merged_row['JNode'])
                                 if list(compare_edge['geometry'].coords) == x:
-                                    print 'True'
+                                    # print 'True'
                                     G.remove_edge(edges[0][0], edges[0][1])
                                     G.remove_edge(edges[1][0], edges[1][1])
                             else:
@@ -191,7 +191,7 @@ class ThinNetwork(object):
                             compare_edge = G.get_edge_data(
                                     merged_row['INode'], merged_row['JNode'])
                             if list(compare_edge['geometry'].coords) == x:
-                                print 'True'
+                                # print 'True'
                                 G.remove_edge(edges[0][0], edges[0][1])
                                 G.remove_edge(edges[1][0], edges[1][1])
                         else:
@@ -227,7 +227,7 @@ class ThinNetwork(object):
             i = i + 1
 
         edge_list = []
-        for x in G.edges.iteritems():
+        for x in G.edges.items():
             edge_list.append(x[1])
         gdf =gpd.GeoDataFrame(edge_list)
         gdf = gdf.append(one_way_keep[cols])

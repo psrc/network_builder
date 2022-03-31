@@ -7,6 +7,7 @@ import errno
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
+from rasterstats import zonal_stats, point_query
 import yaml
 from FlagNetworkFromProjects import *
 from ThinNetwork import *
@@ -25,13 +26,25 @@ from networkx.algorithms.components import *
 import collections
 import multiprocessing as mp
 import build_transit_segments_parallel
+import build_bike_network_parallel
 import collections
 import inro.emme.database.emmebank as _eb
 import inro.emme.desktop.app as app
 import json
 import shutil
 from shutil import copy2 as shcopy
+import multiprocessing as mp
+import configuration
 
+
+def add_run_args(parser, multiprocess=True):
+    """
+    Run command args
+    """
+    parser.add_argument('-c', '--configs_dir',
+                        type=str,
+                        metavar='PATH',
+                        help='path to configs dir')
 
 def nodes_from_turns(turns, edges):
     edge_list = turns.FrEdgeID.tolist() + turns.ToEdgeID.tolist()
@@ -54,7 +67,7 @@ def retain_junctions(junctions):
 def nodes_from_edges(list_of_edges, edges):
     edges = edges[edges.PSRCEdgeID.isin(list_of_edges)]
     node_list = edges.INode.tolist()
-    print len(node_list)
+    print(len(node_list))
     node_list = node_list + edges.JNode.tolist()
     return list(set(node_list))
 
@@ -71,14 +84,13 @@ def nodes_to_retain(edges):
     transit_nodes = nodes_from_transit(gdf_TransitPoints)
     edge_nodes = nodes_from_edges(df_tolls['PSRCEdgeID'].tolist(), edges)
     return turn_nodes + centroids + transit_nodes + junctions + edge_nodes
-    
-
 
 
 if __name__ == '__main__':
     pd.options.display.float_format = '{:.4f}'.format
+    mp.freeze_support()
 
-    config = yaml.safe_load(open("config.yaml"))
+    config = yaml.safe_load(open(os.path.join(configuration.args.configs_dir, "config.yaml")))
 
     logger = log_controller.setup_custom_logger('main_logger')
     logger.info('------------------------Network Builder Started----------------------------------------------')
@@ -91,11 +103,6 @@ if __name__ == '__main__':
 
     model_year = config['model_year']
 
-    #scenario_edges = gdf_TransRefEdges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
-    #                                  & (gdf_TransRefEdges.ActiveLink > 0) 
-    #                                  & (gdf_TransRefEdges.ActiveLink != 999))]
-    #scenario_edges['projRteID'] = 0
-
     if config['update_network_from_projects']:
         logger.info('Start updating network from projects')
         flagged_network = FlagNetworkFromProjects(gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config)
@@ -107,10 +114,6 @@ if __name__ == '__main__':
                                       & (gdf_TransRefEdges.ActiveLink != 999))]
          scenario_edges['projRteID'] = 0
 
-    #scenario_edges = scenario_edges.loc[((gdf_TransRefEdges.InServiceD <= config['model_year']) 
-    #                                  & (scenario_edges.ActiveLink > 0) 
-    #                                  & (scenario_edges.ActiveLink <> 999)) | scenario_edges['projRteID'] > 0]
-    
     logger.info('Start network thinning')
     start_edge_count = len(scenario_edges)
     retain_nodes = nodes_to_retain(scenario_edges)
@@ -133,7 +136,7 @@ if __name__ == '__main__':
         if from_edge.empty:
             logger.warning("Warning: From edge from Turn %s not found!" % (turn.TurnID))
             continue
-        elif int(from_edge.NewINode) <> j_node:
+        elif int(from_edge.NewINode) != j_node:
             i_node = int(from_edge.NewINode)
         else:
             i_node = int(from_edge.NewJNode)
@@ -141,7 +144,7 @@ if __name__ == '__main__':
         if to_edge.empty:
             logger.warning("Warning: To edge from Turn %s not found!" % (turn.TurnID))
             continue
-        elif int(to_edge.NewINode) <> j_node:
+        elif int(to_edge.NewINode) != j_node:
             k_node = int(to_edge.NewINode)
         else:
             k_node = int(to_edge.NewJNode)
@@ -149,19 +152,10 @@ if __name__ == '__main__':
     turn_df = pd.DataFrame(turn_list)
     turn_df = turn_df.merge(gdf_TurnMovements, how = 'left', left_on = 'turn_id', right_on = 'TurnID')
 
-    #deal with node extra attributes for transit assignment
-    #special_routes = gdf_TransitLines[gdf_TransitLines.Mode.isin(['f', 'c'])]
-    #special_stops = gdf_TransitPoints[gdf_TransitPoints['LineID'].isin(special_routes['LineID'])].PSRCJunctID.tolist()
-    #scenario_junctions['hdwfr'] = np.where(scenario_junctions.ScenarioNodeID.isin(special_stops), .1,.5)
-    #scenario_junctions['wait'] = np.where(scenario_junctions.ScenarioNodeID.isin(special_stops), 1,2)
-    #scenario_junctions['invt'] = np.where(scenario_junctions.ScenarioNodeID.isin(special_stops), .7,1)
-
-
-
     if config['create_emme_network']:
         logger.info("creating emme bank")
         emme_folder = os.path.join(config['output_dir'], config['emme_folder_name'])
-        emmebank_dimensions_dict = json.load(open(os.path.join(config['data_path'], 'emme_bank_dimensions.json')))
+        emmebank_dimensions_dict = json.load(open('inputs/emme_bank_dimensions.json'))
         if os.path.exists(emme_folder):
             shutil.rmtree(emme_folder)
         os.makedirs(emme_folder)
@@ -202,9 +196,8 @@ if __name__ == '__main__':
         scenario_edges['is_managed'] = 0
         
         hov_system = BuildHOVSystem(scenario_edges, scenario_junctions, config)
-        #hov_edges = hov_system.hov_edges
-        #hov_junctions = hov_system.hov_junctions
-        #hov_weave_edges = hov_system.hov_weave_edges
+
+        bike_network = pd.DataFrame()
 
         for time_period in config['time_periods']:
             dir = os.path.join(config['output_dir'], 'shapefiles', time_period)
@@ -230,21 +223,51 @@ if __name__ == '__main__':
             tod_edges = pd.concat([tod_edges, pd.DataFrame(hov_edges)],)
             # need to reset so we dont have duplicate index values
             tod_edges.reset_index(inplace = True)
-            tod_edges.crs =  {'init' : 'EPSG:2285'}
+            tod_edges.crs =  config['crs']
 
             tod_junctions =  pd.concat([scenario_junctions, hov_junctions])
             tod_junctions.reset_index(inplace = True)
-            tod_junctions.crs =  {'init' : 'EPSG:2285'}
+            tod_junctions.crs =  config['crs']
 
             test = BuildScenarioLinks(tod_edges, tod_junctions, time_period, config, config['reversibles'][time_period][0],config['reversibles'][time_period][1])
             model_links = test.full_network
             model_nodes = test.junctions
 
-            #deal with transit node extra attribute:
+            # Do Transit Stuff here
+            gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctID + config['node_offset']
+            model_links['weight'] = np.where(model_links['is_managed'] == 1, .5 * model_links.length, model_links.length)
+     
+            route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
+            print (len(route_id_list))
+            if route_id_list:
+                logger.info("Start tracing %s routes", len(route_id_list))
+  
+                # when tracing, only use edges that support transit
+                transit_edges = model_links.loc[(model_links.i > config['max_zone_number']) & (model_links.j > config['max_zone_number'])].copy()  
+                transit_edges = transit_edges.loc[transit_edges['modes'] != 'wk']
+                transit_edges = transit_edges.loc[transit_edges['lanes'] > 0]
+    
+                pool = mp.Pool(config['number_of_pools'], build_transit_segments_parallel.init_pool, [transit_edges,gdf_TransitLines, gdf_TransitPoints])
+                results = pool.map(build_transit_segments_parallel.trace_transit_route, route_id_list)
+                
 
+                results = [item for sublist in results for item in sublist]
+                pool.close()
+                pool.join()
 
-            # Use AM network to create zone, park and ride files   
+                transit_segments = pd.DataFrame(results)
+                if len(transit_segments) > 1:
+                    test = ConfigureTransitSegments(time_period, transit_segments, gdf_TransitLines, model_links, config)
+                    transit_segments = test.configure()
+                else:
+                    logger.warning("Warning: There are no transit segements to build transit routes!")
+            
+                if config['save_network_files'] :
+                    transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
+
+            # Use AM network to create zone, park and ride, and transit stops files   
             if time_period == 'AM':
+
                 zonal_inputs = BuildZoneInputs(model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config)
                 zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
                 path = os.path.join(build_file_folder, 'TAZIndex.txt')
@@ -263,51 +286,87 @@ if __name__ == '__main__':
                 path = os.path.join(build_file_folder, 'headways.csv')
                 headways_df.to_csv(path)
 
-                                 
-  
-            # Do Transit Stuff here
-            gdf_TransitPoints['NewNodeID'] = gdf_TransitPoints.PSRCJunctID + config['node_offset']
-            model_links['weight'] = np.where(model_links['is_managed'] == 1, .5 * model_links.length, model_links.length)
-     
-            route_id_list = gdf_TransitLines.loc[gdf_TransitLines['Headway_' + time_period] > 0].LineID.tolist()
+                # Create transit stops file
+                df = pd.DataFrame()
+                for mode in pd.unique(gdf_TransitLines['Mode']):
+                    transit_edges_submode = gdf_TransitLines[gdf_TransitLines['Mode'] == mode]
+                    stops_df = gdf_TransitPoints[gdf_TransitPoints['LineID'].isin(transit_edges_submode['LineID'].values)]
+                    stops_df['submode'] = mode
+                    stops_df['x'] = stops_df.geometry.x
+                    stops_df['y'] = stops_df.geometry.y
+                    df = df.append(stops_df[['submode','x','y','PSRCJunctID']])
+                # Now BRT
+                transit_edges_submode = gdf_TransitLines[gdf_TransitLines['TransitType'] == 3]
+                stops_df = gdf_TransitPoints[gdf_TransitPoints['LineID'].isin(transit_edges_submode['LineID'].values)]
+                stops_df['submode'] = 'z'
+                stops_df['x'] = stops_df.geometry.x
+                stops_df['y'] = stops_df.geometry.y
+                df = df.append(stops_df[['submode','x','y','PSRCJunctID']])
+                
+                # Now Street Car
+                transit_edges_submode = gdf_TransitLines[gdf_TransitLines['TransitType'] == 4]
+                stops_df = gdf_TransitPoints[gdf_TransitPoints['LineID'].isin(transit_edges_submode['LineID'].values)]
+                stops_df['submode'] = 'y'
+                stops_df['x'] = stops_df.geometry.x
+                stops_df['y'] = stops_df.geometry.y
+                df = df.append(stops_df[['submode','x','y','PSRCJunctID']])
 
-            if route_id_list:
-                logger.info("Start tracing %s routes", len(route_id_list))
-  
-                # when tracing, only use edges that support transit
-                transit_edges = model_links.loc[(model_links.i > config['max_zone_number']) & (model_links.j > config['max_zone_number'])].copy()  
-                transit_edges = transit_edges.loc[transit_edges['modes'] <> 'wk']
-                transit_edges = transit_edges.loc[transit_edges['lanes'] > 0]
-    
-                pool = mp.Pool(config['number_of_pools'], build_transit_segments_parallel.init_pool, [transit_edges, gdf_TransitLines, gdf_TransitPoints])
-                results = pool.map(build_transit_segments_parallel.trace_transit_route, route_id_list)
-
-                results = [item for sublist in results for item in sublist]
-                pool.close()
-
-                transit_segments = pd.DataFrame(results)
-                if len(transit_segments) > 1:
-                    test = ConfigureTransitSegments(time_period, transit_segments, gdf_TransitLines, model_links, config)
-                    transit_segments = test.configure()
-                else:
-                    logger.warning("Warning: There are no transit segements to build transit routes!")
+                df = df.groupby(['submode','PSRCJunctID']).max().reset_index()
+                for submode, colname in config['submode_dict'].items(): 
+                    df.loc[df['submode'] == submode, colname] = 1
+                df.fillna(0, inplace=True)
+                df.drop('submode', axis=1, inplace=True)
+                #df = df.groupby('PSRCJunctID').max().reset_index()
+                df.to_csv(os.path.join(build_file_folder,'transit_stops.csv'), index=False)
             
-                if config['save_network_files'] :
-                    transit_segments.to_csv(os.path.join(dir, time_period + '_transit_segments.csv'))
-        
+            if config['build_bike_network']:    # Only run this once
+
+                # Only run this for one time period:
+                if len(bike_network) == 0:
+                    
+                    # Filter bikeable links (remove freeways, ramps, transit-only facilities, centroid connectors)
+                    bike_network = model_links[model_links['FacilityType'].isin(config['bike_facility_types'])]
+
+                    # Intersect elevation raster with all point features along each link
+                    logger.info('Elevation raster start')
+                    pts = np.array(point_query(bike_network, config['raster_file_path']))
+                    logger.info('Elevation raster done')
+                    elev_dict = {}
+
+                    for i in range(len(pts)):
+                        id = bike_network.iloc[i].id
+                        elev_dict[id] = pts[i]
+
+                    # Calculate slope between points for all links
+                    # Each link is composed of multiple points, depending on line geometry and length
+                    # Slope is calculated in direction of link & only considers increases in slope
+                    link_ids = bike_network['id'].tolist()
+                    bike_pool = mp.Pool(config['number_of_pools'], build_bike_network_parallel.init_pool, 
+                                    [bike_network, elev_dict])
+                    avg_upslope = bike_pool.map(build_bike_network_parallel.calc_slope_parallel, link_ids)
+
+                    bike_pool.close()
+                    bike_pool.join()  
+
+                    # Slope is the average increase in slope across the link (upslope)
+                    bike_network['upslp'] = avg_upslope
+
+                    logger.info('Bike work done')
+
+                # Join slope to network
+                model_links = model_links.merge(bike_network[['i','j','upslp']], on=['i','j'], how='left')
+                model_links['upslp'] = model_links['upslp'].fillna(0)
+            else:
+                 model_links['upslp'] = -1
+
             if config['save_network_files'] :
                 model_nodes.to_file(os.path.join(dir, time_period + '_junctions.shp'), driver='ESRI Shapefile')
 
-                model_links.to_file(os.path.join(dir, time_period + '_edges.shp'),  driver='ESRI Shapefile')
+                model_links.reset_index(drop = True, inplace = True)
+                model_links.to_file(os.path.join(dir, time_period + '_edges.shp'),  driver='ESRI Shapefile', Index =  False)
 
             if config['create_emme_network']:
                 if route_id_list:
-                    # deal with transit node attributes
-                    #special_segs = transit_segments[transit_segments['transit_mode'].isin(['p', 'f'])]
-                    #special_nodes = list(set(special_segs['i'].tolist() + special_segs['j'].tolist()))
-                    #model_nodes['hdwfr'] = np.where(model_nodes['i'].isin(special_nodes), .1, .5)
-                    #model_nodes['wait'] = np.where(model_nodes['i'].isin(special_nodes), 1, 2)
-                    #model_nodes['invt'] = np.where(model_nodes['i'].isin(special_nodes), .7, 1)
    
                     model_nodes['invt'] = 1
                     model_nodes['wait'] = 2
@@ -335,12 +394,11 @@ if __name__ == '__main__':
                 path = os.path.join(build_file_folder, 'extra_attributes', time_period.lower() + '_link_attributes.in')
                 my_project.export_extra_attributes(['LINK'], path)
                 my_project.export_extra_attributes(['NODE'], path)
+                if route_id_list:
+                    my_project.export_extra_attributes(['TRANSIT_LINE'], path)
 
                 path = os.path.join(build_file_folder, 'shape', time_period.lower() + '_shape.in')
                 my_project.export_shape(path)
-
-
-
 
     end_time = datetime.datetime.now()
     elapsed_total = end_time - start_time
