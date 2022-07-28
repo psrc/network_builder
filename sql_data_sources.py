@@ -33,7 +33,8 @@ def read_from_sde(config, feature_class_name, version,
     cs: cordinate system
     """
     if config['use_sqlalchemy']:
-        connection_string = '''mssql+pyodbc://%s/%s?driver=ODBC Driver 17 for SQL Server?Trusted_Connection=yes''' % (config['server'], config['database'])
+        connection_string = '''mssql+pyodbc://%s/%s?driver=SQL Server?Trusted_Connection=yes''' % (config['server'], config['database'])
+        #connection_string = '''mssql+pyodbc://%s/%s?driver=ODBC Driver 17 for SQL Server?Trusted_Connection=yes''' % (config['server'], config['database'])
         engine = sqlalchemy.create_engine(connection_string)
         con = engine.connect()
         con.execute("sde.set_current_version {0}".format(version))
