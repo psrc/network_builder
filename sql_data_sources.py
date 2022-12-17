@@ -1,6 +1,7 @@
 import os
 import pyodbc
 import sqlalchemy
+from pymssql import connect
 import time
 from pandas import read_sql
 from shapely import wkt
@@ -16,7 +17,7 @@ import time
 import sys
 import configuration
 
-def read_from_sde(connection_string, feature_class_name, version,
+def read_from_sde(config, feature_class_name, version,
                   crs={'init': 'epsg:2285'}, is_table=False):
     """
     Returns the specified feature class as a geodataframe from ElmerGeo.
@@ -31,10 +32,18 @@ def read_from_sde(connection_string, feature_class_name, version,
 
     cs: cordinate system
     """
+    if config['use_sqlalchemy']:
+        connection_string = '''mssql+pyodbc://%s/%s?driver=SQL Server?Trusted_Connection=yes''' % (config['server'], config['database'])
+        #connection_string = '''mssql+pyodbc://%s/%s?driver=ODBC Driver 17 for SQL Server?Trusted_Connection=yes''' % (config['server'], config['database'])
+        engine = sqlalchemy.create_engine(connection_string)
+        con = engine.connect()
+        con.execute("sde.set_current_version {0}".format(version))
+    
+    else:
+        con = connect(config['server'], database=config['database'])
+        cursor = con.cursor()
+        cursor.execute("sde.set_current_version %s", version[1:-1])
 
-    engine = sqlalchemy.create_engine(connection_string)
-    con = engine.connect()
-    con.execute("sde.set_current_version {0}".format(version))
 
     if is_table:
         gdf = pd.read_sql('select * from %s' %
@@ -42,9 +51,15 @@ def read_from_sde(connection_string, feature_class_name, version,
         con.close()
 
     else:
-        df = pd.read_sql('select *, Shape.STAsText() as geometry from %s' %
-                         (feature_class_name), con=con)
+        if config['use_sqlalchemy']:
+            query_string = 'select *, Shape.STAsText() as geometry from %s' % (feature_class_name)
+        else:
+            geo_col_stmt = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=" + "\'" + feature_class_name + "\'" + " AND DATA_TYPE='geometry'"
+            geo_col = str(pd.read_sql(geo_col_stmt, con).iloc[0,0])
+            query_string = 'SELECT *,' + geo_col + '.STGeometryN(1).ToString()' + ' FROM ' + feature_class_name
+        df = pd.read_sql(query_string, con)
         con.close()
+        df.rename(columns={'':'geometry'}, inplace = True)
 
         df['geometry'] = df['geometry'].apply(wkt.loads)
         gdf = gpd.GeoDataFrame(df, geometry='geometry')
@@ -61,65 +76,66 @@ model_year = config['model_year']
 crs = config['crs']
 
 if config['data_source_type'] == 'enterprise_gdb':
-    connection_string = '''mssql+pyodbc://%s/%s?driver=SQL Server?
-    Trusted_Connection=yes''' % (config['server'], config['database'])
+    #connection_string = '''mssql+pyodbc://%s/%s?driver=ODBC Driver 17 for SQL Server?Trusted_Connection=yes''' % (config['server'], config['database'])
+    #connection_string = '''mssql+pyodbc://%s/%s?driver=SQL Server?
+    #Trusted_Connection=yes''' % (config['server'], config['database'])
 
     version = config['version']
 
     # modeAttributes
-    df_modeAttributes = read_from_sde(connection_string,
+    df_modeAttributes = read_from_sde(config,
                                       tables_config['mode_attributes'],
                                       version, crs=crs, is_table=True)
 
-    df_tolls = read_from_sde(connection_string,
+    df_tolls = read_from_sde(config,
                              tables_config['mode_tolls'],
                              version, crs=crs, is_table=True)
 
-    gdf_TransRefEdges = read_from_sde(connection_string,
+    gdf_TransRefEdges = read_from_sde(config,
                                       tables_config['edges'],
                                       version, crs=crs, is_table=False)
 
-    gdf_TransitLines = read_from_sde(connection_string,
+    gdf_TransitLines = read_from_sde(config,
                                      tables_config['transit_lines'],
                                      version, crs=crs, is_table=False)
 
-    gdf_TransitPoints = read_from_sde(connection_string,
+    gdf_TransitPoints = read_from_sde(config,
                                       tables_config['transit_points'],
                                       version, crs=crs, is_table=False)
-    gdf_TurnMovements = read_from_sde(connection_string,
+    gdf_TurnMovements = read_from_sde(config,
                                       tables_config['turn_movements'],
                                       version, crs=crs, is_table=False)
 
     # Juncions
-    gdf_Junctions = read_from_sde(connection_string,
+    gdf_Junctions = read_from_sde(config,
                                   tables_config['junctions'],
                                   version, crs=crs, is_table=False)
 
     if config['build_transit_headways']:
-        df_transit_frequencies = read_from_sde(connection_string,
+        df_transit_frequencies = read_from_sde(config,
                                                tables_config[
                                                    'transit_frequencies'],
                                                version, crs=crs,
                                                is_table=True)
 
     if config['update_network_from_projects']:
-        gdf_ProjectRoutes = read_from_sde(connection_string,
+        gdf_ProjectRoutes = read_from_sde(config,
                                           tables_config['project_routes'],
                                           version, crs=crs, is_table=False)
 
-        df_tblProjectsInScenarios = read_from_sde(connection_string,
+        df_tblProjectsInScenarios = read_from_sde(config,
                                                   tables_config[
                                                       'projects_in_scenarios'],
                                                   version, crs=crs,
                                                   is_table=True)
 
-        df_tblLineProjects = read_from_sde(connection_string,
+        df_tblLineProjects = read_from_sde(config,
                                            tables_config['project_attributes'],
                                            version, crs=crs, is_table=True)
 
         # point events (park and rides)
         df_evtPointProjectOutcomes = read_from_sde(
-                                                   connection_string,
+                                                   config,
                                                    tables_config[
                                                        'point_events'],
                                                    version, crs=crs,

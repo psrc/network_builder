@@ -364,6 +364,10 @@ class FlagNetworkFromProjects(object):
                 # If all values are -1
                 if max(edges[col].values)==-1:
                     row_dict[col] = -1
+                elif np.isnan(np.min(edges[col].values)):
+                    self._logger.info('Fatal: Null values encountered. Please check %s attribute from proRteID %s for Null values!' % (col, str(list(edges.projRteID.values))))
+                    sys.exit(1)
+
                 else:
                     field_values = edges[col].values
                     # Get rid of any -1s, which means no change from that project

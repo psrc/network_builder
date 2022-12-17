@@ -112,11 +112,24 @@ class EmmeNetwork(object):
                 if segs.empty:
                     self._logger.warning('No transit segments for line %s in %s segment table!' % (line.LineID, self.time_period))
                     continue
+
                 elif len(segs) == 1:
-                    emme_line = network.create_transit_line(line.LineID, line.VehicleType , [segs.INode, segs.JNode])
+                    try:
+                        emme_line = network.create_transit_line(line.LineID, line.VehicleType , [segs.INode, segs.JNode])
+                    except Exception as ex:
+                        print(ex)
+                        self._logger.warning('Failed to create line %s for %s time period.' % (line.LineID, self.time_period))
+                        sys.exit()
+
                 else:
                     nodes = segs.INode.tolist() + [segs.JNode.tolist()[-1]]
-                    emme_line = network.create_transit_line(line.LineID, line.VehicleType , nodes)
+                    try:
+                        emme_line = network.create_transit_line(line.LineID, line.VehicleType , nodes)
+                    except Exception as ex:
+                        print(ex)
+                        self._logger.warning('Failed to create line %s for %s time period.' % (line.LineID, self.time_period))
+                        sys.exit()
+
                 emme_line.description = line.Description[0:20]
                 emme_line.speed = line.Speed
                 emme_line.headway = line['Headway_' + self.time_period]
