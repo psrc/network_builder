@@ -3,11 +3,14 @@
 data_source_type: enterprise_gdb
 
 # The following should be filled out if using an 'enterprise_gdb' connection
+
+use_sqlalchemy: True
+
 server: AWS-Prod-SQL\Sockeye
 
 database: OSMTest
 
-version: "'DBO.Kris2'"
+version: "'DBO.Stefan'"
 
 
 # The following should be filled out if using a 'file_gdb' as data_source
@@ -17,14 +20,15 @@ file_gdb_path: T:/2021September/Stefan/network.gdb
 
 # Standard user params:
 
-output_dir: E:/networks/new_2018_modes_test
+output_dir: E:/networks/capacity_projects_removed_2030
 
 number_of_pools: 12
 
-model_year: 2018
+model_year: 2050
 
-crs:
-  'init' : 'EPSG:2285'
+input_crs: 2285
+
+output_crs: null
 
 main_log_file : 'run_log'
 
@@ -40,9 +44,9 @@ add_channelization: False
 
 
 # Project/Future network params
-update_network_from_projects : False
+update_network_from_projects : True
 
-scenario_name: constrained_2050 #as defined in the tblProjectsInScenarios table
+scenario_name: remove_capacity_projects #as defined in the tblProjectsInScenarios table
 
 projects_version_year : 2022
 
@@ -59,7 +63,7 @@ project_buffer_dist : 1
 hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
-build_bike_network : True
+build_bike_network : False
 save_network_files : True  
 create_emme_network: True
 export_build_files: True
