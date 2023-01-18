@@ -5,6 +5,8 @@ data_source_type: enterprise_gdb
 # The following should be filled out if using an 'enterprise_gdb' connection
 server: Everest10\ss2016
 
+use_sqlalchemy: False
+
 database: TravelModelGDB
 
 version: "'sde.DEFAULT'"
@@ -17,16 +19,17 @@ file_gdb_path: H:/Model_Dev/Master_Network/PSRC_Model_Network/network/network.gd
 
 # Standard user params:
 
-output_dir: pierce_test
+output_dir: C:/NB/B18_4   ########################################################
+#output_dir: pierce_test
 
-number_of_pools: 5
+number_of_pools: 1  #5
 
-model_year: 2018
+model_year: 2018    #######################################################
+        
 
-crs:
-  'init' : 'EPSG:2927'
+input_crs: 2927 # Pierce County projection
 
-epsg: 2927
+output_crs: 2285 # PSRC projection WA stateplane North
 
 main_log_file : 'run_log'
 
@@ -41,11 +44,11 @@ time_periods: ['AM','MD','PM','EV','NI']
 add_channelization: True
 
 # Project/Future network params
-update_network_from_projects : False  #### True
+update_network_from_projects : False  #### True   ####################################################
 
-scenario_name: constrained_2050    #### remove_capacity_projects #as defined in the tblProjectsInScenarios table
+scenario_name: constrained_2050    #### remove_capacity_projects #as defined in the tblProjectsInScenarios table  ###################################
 
-projects_version_year : 2022
+projects_version_year : 2022   ###################################################
 
 
 # Facilities where slope should be calculated; slope of 0 is assumed otherwise
@@ -183,7 +186,7 @@ weave_links:
   direction: 1
   i: NewINode
   j: NewJNode
-  modes: 'asehdimjgvutbpwl'
+  modes: 'ashijvutbpwl'
   length : 0.01
   type: 90
   lanes: 1
@@ -240,16 +243,16 @@ hov_lanes:
   14: 1
 
 hov_modes:
-  1: 'ahijbdmgp'
-  2: 'aijbmgp'
+  1: 'ahijbp'
+  2: 'aijbp'
   3: 'abp'
   4: 'abp'
-  5: 'ashijbedmgp'
-  6: 'ashijvbedmgp'
-  7: 'ahijbdmgp'
-  12: 'ashijbedmgp'
-  13: 'ashijvbedmgp'
-  14: 'ashijvbedmgp'
+  5: 'ashijbp'
+  6: 'ashijvbp'
+  7: 'ahijbp'
+  12: 'ashijbp'
+  13: 'ashijvbp'
+  14: 'ashijvbp'
 
 reverse_walk_link_facility_types : [3, 5, 6, 7, 8, 9]
 standard_facility_types : [1, 2, 3, 4, 5, 6, 7, 8, 9]
