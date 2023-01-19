@@ -71,7 +71,10 @@ def read_from_sde(
                 + "'"
                 + " AND DATA_TYPE='geometry'"
             )
-            geo_col = str(pd.read_sql(geo_col_stmt, con).iloc[0, 0])
+            try:
+                geo_col = str(pd.read_sql(geo_col_stmt, con).iloc[0, 0])
+            except:
+                geo_col = 'Shape'
             query_string = (
                 "SELECT *,"
                 + geo_col
@@ -92,8 +95,8 @@ def read_from_sde(
             if col not in ["Shape", "GDB_GEOMATTR_DATA", "SDE_STATE_ID"]
         ]
         gdf = gdf[cols]
-        if output_crs:
-            gdf.to_crs(output_crs)
+        if (not is_table) and (output_crs):
+            gdf = gdf.to_crs(output_crs)
 
     return gdf
 
