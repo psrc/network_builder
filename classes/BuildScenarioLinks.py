@@ -1,6 +1,6 @@
 import geopandas as gpd
 import pandas as pd
-import log_controller
+import modules.log_controller
 import numpy as np
 from shapely.geometry import LineString
 
@@ -12,7 +12,7 @@ class BuildScenarioLinks(object):
         self.config = config
         self.reversible_both_dir = reversible_both_dir
         self.reversible_switch_dir = reversible_switch_dir
-        self._logger = log_controller.logging.getLogger('main_logger')
+        self._logger = modules.log_controller.logging.getLogger('main_logger')
         self.full_network = self.create_full_model_network() 
         self.junctions = self._create_junctions()
 

@@ -2,7 +2,7 @@ import geopandas as gpd
 import pandas as pd
 import multiprocessing as mp
 import networkx as nx
-import log_controller
+import modules.log_controller
 
 def trace_transit_route(route_id):
     #global global_edges

@@ -1,6 +1,6 @@
 import geopandas as gpd
 import pandas as pd
-import log_controller
+import modules.log_controller
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
@@ -13,7 +13,7 @@ class BuildHOVSystem(object):
         self.junctions_gdf = junctions_gdf
         #self.time_period = time_period
         self.config = config
-        self._logger = log_controller.logging.getLogger('main_logger')
+        self._logger = modules.log_controller.logging.getLogger('main_logger')
         self.hov_edges = self._get_hov_edges()
         self.hov_junctions = self._get_hov_junctions()
         self.hov_weave_edges = self._get_weave_edges()

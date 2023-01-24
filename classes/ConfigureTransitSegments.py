@@ -1,6 +1,6 @@
 import geopandas as gpd
 import pandas as pd
-import log_controller
+import modules.log_controller
 import numpy as np
 
 class ConfigureTransitSegments(object):
@@ -10,7 +10,7 @@ class ConfigureTransitSegments(object):
         self.transit_lines = transit_lines
         self.model_links = model_links
         self.config = config
-        self._logger = log_controller.logging.getLogger('main_logger')
+        self._logger = modules.log_controller.logging.getLogger('main_logger')
 
     def configure(self):
         self.transit_segments.sort_values(['route_id', 'order'], inplace = True)

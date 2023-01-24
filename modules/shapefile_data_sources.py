@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import numpy as np
 import yaml
-from log_controller import timed
+from modules.log_controller import timed
 
 config = yaml.safe_load(open("config.yaml"))
 

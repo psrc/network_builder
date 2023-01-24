@@ -1,7 +1,7 @@
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import LineString
-import log_controller
+import modules.log_controller
 import networkx as nx
 from networkx.algorithms.components import *
 import copy
@@ -14,7 +14,7 @@ class ThinNetwork(object):
         self.junctions_gdf = junctions_gdf
         self.thin_nodes_list = thin_nodes_list
         self.config = config
-        self._logger = log_controller.logging.getLogger('main_logger')
+        self._logger = modules.log_controller.logging.getLogger('main_logger')
         self.thinned_edges_gdf = self._thin_network()
         self.thinned_junctions_gdf = self._thin_junctions()
 

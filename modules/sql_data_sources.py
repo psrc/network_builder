@@ -12,10 +12,11 @@ import pandas as pd
 import os
 import numpy as np
 import yaml
-from log_controller import timed
+from modules.log_controller import timed
 import time
 import sys
-import configuration
+import modules.configuration
+from classes.validate_settings import *
 
 
 def read_from_sde(
@@ -109,11 +110,16 @@ def open_from_file_gdb(file_gdb_path, layer_name, output_crs=None):
 
 
 config = yaml.safe_load(
-    open(os.path.join(configuration.args.configs_dir, "config.yaml"))
+    open(os.path.join(modules.configuration.args.configs_dir, "config.yaml"))
 )
+
+config = ValidateSettings(**config)
+
 tables_config = yaml.safe_load(
-    open(os.path.join(configuration.args.configs_dir, "tables_config.yaml"))
+    open(os.path.join(modules.configuration.args.configs_dir, "tables_config.yaml"))
 )
+
+config = config.dict()
 model_year = config["model_year"]
 input_crs = config["input_crs"]
 output_crs = config["output_crs"]

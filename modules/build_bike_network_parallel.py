@@ -3,9 +3,9 @@ import pandas as pd
 import numpy as np
 import multiprocessing as mp
 from shapely.geometry import LineString, Point
-import log_controller
+import modules.log_controller
 import yaml
-import configuration
+import modules.configuration
 import os
 
 

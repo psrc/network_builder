@@ -9,24 +9,25 @@ from shapely.geometry import LineString
 from shapely.geometry import Point
 from rasterstats import zonal_stats, point_query
 import yaml
-from FlagNetworkFromProjects import *
-from ThinNetwork import *
-from BuildHOVSystem import *
-from BuildScenarioLinks import *
-from ConfigureTransitSegments import *
-from EmmeProject import *
-from EmmeNetwork import *
-from BuildZoneInputs import *
-from TransitHeadways import *
+from classes.FlagNetworkFromProjects import *
+from classes.ThinNetwork import *
+from classes.hov_system import *
+from classes.BuildScenarioLinks import *
+from classes.ConfigureTransitSegments import *
+from classes.EmmeProject import *
+from classes.EmmeNetwork import *
+from classes.BuildZoneInputs import *
+from classes.TransitHeadways import *
+from classes.validate_settings import *
 import logging
-import log_controller
+import modules.log_controller
 import datetime
 import networkx as nx
 from networkx.algorithms.components import *
 import collections
 import multiprocessing as mp
-import build_transit_segments_parallel
-import build_bike_network_parallel
+import modules.build_transit_segments_parallel
+import modules.build_bike_network_parallel
 import collections
 import inro.emme.database.emmebank as _eb
 import inro.emme.desktop.app as app
@@ -34,7 +35,7 @@ import json
 import shutil
 from shutil import copy2 as shcopy
 import multiprocessing as mp
-import configuration
+import modules.configuration
 
 
 def add_run_args(parser, multiprocess=True):
@@ -95,10 +96,12 @@ if __name__ == "__main__":
     mp.freeze_support()
 
     config = yaml.safe_load(
-        open(os.path.join(configuration.args.configs_dir, "config.yaml"))
+        open(os.path.join(modules.configuration.args.configs_dir, "config.yaml"))
     )
 
-    logger = log_controller.setup_custom_logger("main_logger")
+    config = ValidateSettings(**config)
+
+    logger = modules.log_controller.setup_custom_logger("main_logger")
     logger.info(
         "------------------------Network Builder Started----------------------------------------------"
     )
@@ -106,7 +109,7 @@ if __name__ == "__main__":
     start_time = datetime.datetime.now()
 
     logger.info("Starting data import")
-    from sql_data_sources import *
+    from modules.sql_data_sources import *
 
     logger.info("Finished data import")
 
@@ -312,11 +315,11 @@ if __name__ == "__main__":
 
                 pool = mp.Pool(
                     config["number_of_pools"],
-                    build_transit_segments_parallel.init_pool,
+                    modules.build_transit_segments_parallel.init_pool,
                     [transit_edges, gdf_TransitLines, gdf_TransitPoints],
                 )
                 results = pool.map(
-                    build_transit_segments_parallel.trace_transit_route, route_id_list
+                    modules.build_transit_segments_parallel.trace_transit_route, route_id_list
                 )
 
                 results = [item for sublist in results for item in sublist]

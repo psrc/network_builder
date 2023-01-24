@@ -4,7 +4,7 @@ data_source_type: enterprise_gdb
 
 # The following should be filled out if using an 'enterprise_gdb' connection
 
-use_sqlalchemy: True
+use_sqlalchemy: False
 
 server: AWS-Prod-SQL\Sockeye
 

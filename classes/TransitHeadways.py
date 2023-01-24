@@ -1,6 +1,6 @@
 import geopandas as gpd
 import pandas as pd
-import log_controller
+import modules.log_controller
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
@@ -11,7 +11,7 @@ class TransitHeadways(object):
         self.transit_routes = transit_gdf
         self.frequencies = df_transit_frequenciies
         self.config = config
-        self._logger = log_controller.logging.getLogger('main_logger')
+        self._logger = modules.log_controller.logging.getLogger('main_logger')
     
     def build_headways(self):
         frequency_df = self.transit_routes.merge(self.frequencies, how = 'left', left_on = 'LineID', right_on = 'LineID')

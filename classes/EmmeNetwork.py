@@ -7,9 +7,9 @@ import inro.emme.database.matrix
 import inro.emme.database.emmebank as _eb
 import geopandas as gpd
 import os
-from EmmeProject import *
+#from EmmeProject import *
 import json
-import log_controller
+import modules.log_controller
 
 class EmmeNetwork(object):
     def __init__(self, emme_project, time_period, transit_lines, model_links, model_nodes, turns, config, transit_segments = None):
@@ -24,7 +24,7 @@ class EmmeNetwork(object):
         transit_lines = transit_lines.loc[transit_lines['Headway_' + self.time_period] > 0]
         self.transit_lines = transit_lines
         self.config = config
-        self._logger = log_controller.logging.getLogger('main_logger')
+        self._logger = modules.log_controller.logging.getLogger('main_logger')
     
     def _create_scenario(self, scenario_name, scenario_id):
         scenario = self.emme_project.bank.create_scenario(scenario_id)

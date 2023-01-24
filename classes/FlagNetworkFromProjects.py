@@ -1,6 +1,6 @@
 import geopandas as gpd
 import pandas as pd
-import log_controller
+import modules.log_controller
 import numpy as np
 import sys
 import os
@@ -14,7 +14,7 @@ class FlagNetworkFromProjects(object):
         self.project_gdf = projects_gdf
         self.junctions_gdf = junctions_gdf
         self.config = config
-        self._logger = log_controller.logging.getLogger('main_logger')
+        self._logger = modules.log_controller.logging.getLogger('main_logger')
         self.route_edges = self._get_route_edges()
         self.edge_proj_dict = self._edge_project_map()
         self.route_junctions = self._get_route_junctions()

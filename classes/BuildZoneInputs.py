@@ -1,6 +1,6 @@
 import geopandas as gpd
 import pandas as pd
-import log_controller
+import modules.log_controller
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
@@ -12,7 +12,7 @@ class BuildZoneInputs(object):
         self.project_gdf = projects_gdf
         self.point_events_df = point_events_df
         self.config = config
-        self._logger = log_controller.logging.getLogger('main_logger')
+        self._logger = modules.log_controller.logging.getLogger('main_logger')
     
     def build_zone_inputs(self):
         zone_nodes_df = self.scenario_junctions.loc[self.scenario_junctions['is_zone'] == 1]
