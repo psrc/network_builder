@@ -75,7 +75,7 @@ def read_from_sde(
             try:
                 geo_col = str(pd.read_sql(geo_col_stmt, con).iloc[0, 0])
             except:
-                geo_col = 'Shape'
+                geo_col = "Shape"
             query_string = (
                 "SELECT *,"
                 + geo_col

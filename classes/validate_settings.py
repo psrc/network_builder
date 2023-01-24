@@ -2,6 +2,8 @@ from pydantic import BaseModel, validator
 from typing import List, Optional
 import typing
 from pathlib import Path
+
+
 class ValidateSettings(BaseModel):
     # Data sources
     data_source_type: str
@@ -25,30 +27,29 @@ class ValidateSettings(BaseModel):
     add_channelization: bool
 
     # Projects:
-    update_network_from_projects : bool
+    update_network_from_projects: bool
     scenario_name: str
     projects_version_year: int
     project_buffer_dist: int
-    
 
     # Others:
     # Facilities where slope should be calculated; slope of 0 is assumed otherwise
-    bike_facility_types : list
-    hov_shift_dist : float
-    build_transit_headways: bool 
-    build_bike_network : bool
-    save_network_files : bool  
+    bike_facility_types: list
+    hov_shift_dist: float
+    build_transit_headways: bool
+    build_bike_network: bool
+    save_network_files: bool
     create_emme_network: bool
     export_build_files: bool
     emme_folder_name: str
-    emmebank_title : str
+    emmebank_title: str
     modes_file: str
     transit_vehicle_file: str
 
     submode_dict: dict
 
     # Bike Network
-    elev_conversion: float    # Convert raster elevation from meters to feet
+    elev_conversion: float  # Convert raster elevation from meters to feet
     raster_file_path: str
     ferry_link_factor: int
 
@@ -58,7 +59,7 @@ class ValidateSettings(BaseModel):
     dir_columns: list
     toll_columns: list
     dir_toll_columns: list
-    non_dir_columns : list
+    non_dir_columns: list
     project_columns: list
     project_update_columns: list
     intermediate_keep_columns: list
@@ -85,28 +86,32 @@ class ValidateSettings(BaseModel):
             raise ValueError(f"must be in {allowed_set}, got '{method}'")
         return method
 
-    @validator("use_sqlalchemy", always = True)
+    @validator("use_sqlalchemy", always=True)
     def enterprise_gdb_required_fields_boolean(cls, v, values, **kwargs):
-        if values['data_source_type']=='enterprise_gdb':
+        if values["data_source_type"] == "enterprise_gdb":
             if type(v) != bool:
-                raise ValueError(f"Field must be boolean when using enterprise_gdb as data source!")
+                raise ValueError(
+                    f"Field must be boolean when using enterprise_gdb as data source!"
+                )
             else:
                 return v
 
-    @validator("server", "database", "version", always = True)
+    @validator("server", "database", "version", always=True)
     def enterprise_gdb_required_fields_string(cls, v, values, **kwargs):
-        if values['data_source_type']=='enterprise_gdb':
+        if values["data_source_type"] == "enterprise_gdb":
             if type(v) != str:
-                raise ValueError(f"Field must be boolean when using enterprise_gdb as data source!")
+                raise ValueError(
+                    f"Field must be boolean when using enterprise_gdb as data source!"
+                )
             else:
                 return v
 
-    @validator("file_gdb_path", always = True)
+    @validator("file_gdb_path", always=True)
     def file_gdb_required_fields_string(cls, v, values, **kwargs):
-        if values['data_source_type']=='file_gdb':
+        if values["data_source_type"] == "file_gdb":
             if type(v) != str:
-                raise ValueError(f"Field must be boolean when using enterprise_gdb as data source!")
+                raise ValueError(
+                    f"Field must be boolean when using enterprise_gdb as data source!"
+                )
             else:
                 return v
-
-

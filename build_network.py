@@ -319,7 +319,8 @@ if __name__ == "__main__":
                     [transit_edges, gdf_TransitLines, gdf_TransitPoints],
                 )
                 results = pool.map(
-                    modules.build_transit_segments_parallel.trace_transit_route, route_id_list
+                    modules.build_transit_segments_parallel.trace_transit_route,
+                    route_id_list,
                 )
 
                 results = [item for sublist in results for item in sublist]
