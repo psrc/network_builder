@@ -20,11 +20,11 @@ file_gdb_path: T:/2021September/Stefan/network.gdb
 
 # Standard user params:
 
-output_dir: E:/networks/capacity_projects_removed_2030
+output_dir: E:/networks/overnight_transit
 
 number_of_pools: 12
 
-model_year: 2050
+model_year: 2018
 
 input_crs: 2285
 
@@ -44,7 +44,7 @@ add_channelization: False
 
 
 # Project/Future network params
-update_network_from_projects : True
+update_network_from_projects : False
 
 scenario_name: remove_capacity_projects #as defined in the tblProjectsInScenarios table
 
@@ -99,6 +99,7 @@ transit_headway_mapper :
   'hdw_16to17' : ['hour_16']
   'hdw_17to18' : ['hour_17']
   'hdw_18to20' : ['hour_18', 'hour_19']
+  'hdw_20to5' : ['hour_20', 'hour_21', 'hour_22', 'hour_23', 'hour_24', 'hour_25']
 
 
 reversibles:
