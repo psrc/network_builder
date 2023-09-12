@@ -57,8 +57,8 @@ def nodes_from_transit(transit_points):
     return list(set(transit_points.PSRCJunctID.tolist()))
 
 
-def nodes_from_centroids(junctions):
-    centroid_junctions = junctions[junctions.EMME2nodeID > 0]
+def nodes_from_centroids(junctions, config):
+    centroid_junctions = junctions[junctions.PSRCJunctID <= config['max_zone_number']]
     return centroid_junctions.PSRCjunctID.tolist()
 
 
@@ -82,9 +82,9 @@ def get_potential_thin_nodes(edges):
     return df.index.tolist()
 
 
-def nodes_to_retain(edges):
+def nodes_to_retain(edges, config):
     junctions = retain_junctions(gdf_Junctions)
-    centroids = nodes_from_centroids(gdf_Junctions)
+    centroids = nodes_from_centroids(gdf_Junctions, config)
     turn_nodes = nodes_from_turns(gdf_TurnMovements, edges)
     transit_nodes = nodes_from_transit(gdf_TransitPoints)
     edge_nodes = nodes_from_edges(df_tolls["PSRCEdgeID"].tolist(), edges)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
     logger.info("Start network thinning")
     start_edge_count = len(scenario_edges)
-    retain_nodes = nodes_to_retain(scenario_edges)
+    retain_nodes = nodes_to_retain(scenario_edges, config)
     potential_thin_nodes = get_potential_thin_nodes(scenario_edges)
     potential_thin_nodes = [x for x in potential_thin_nodes if x not in retain_nodes]
     logger.info(" %s Potential nodes to thin", len(potential_thin_nodes))
