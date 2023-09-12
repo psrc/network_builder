@@ -58,7 +58,7 @@ def nodes_from_transit(transit_points):
 
 
 def nodes_from_centroids(junctions, config):
-    centroid_junctions = junctions[junctions.PSRCJunctID <= config['max_zone_number']]
+    centroid_junctions = junctions[junctions.PSRCjunctID <= config['max_zone_number']]
     return centroid_junctions.PSRCjunctID.tolist()
 
 
