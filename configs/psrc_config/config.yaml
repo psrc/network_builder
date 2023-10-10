@@ -10,7 +10,8 @@ server: AWS-Prod-SQL\Sockeye
 
 database: OSMTest
 
-version: "'DBO.Stefan'"
+#version: "'DBO.Stefan'"
+version: "'sde.DEFAULT'"
 
 
 # The following should be filled out if using a 'file_gdb' as data_source
@@ -20,12 +21,11 @@ file_gdb_path: T:/2021September/Stefan/network.gdb
 
 # Standard user params:
 
-output_dir: E:/networks/overnight_transit
+output_dir: E:/networks/test_2023
 
-number_of_pools: 12
+number_of_pools: 1
 
-model_year: 2018
-
+model_year: 2023
 input_crs: 2285
 
 output_crs: null
@@ -48,7 +48,7 @@ update_network_from_projects : False
 
 scenario_name: remove_capacity_projects #as defined in the tblProjectsInScenarios table
 
-projects_version_year : 2022
+projects_version_year : 2023
 
 
 # Facilities where slope should be calculated; slope of 0 is assumed otherwise
@@ -110,7 +110,7 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'upslp','bkfac', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'FGTS', 'ttf']
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'PSRCEdgeID', 'upslp','bkfac', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'FGTS', 'ttf']
   'NODE' : ['lr_walk', 'hdwfr', 'wait', 'invt']
   'TRANSIT_LINE' : ['TransitType']
 
@@ -148,7 +148,7 @@ intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'L
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'ttf']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed','bkfac']
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed', 'bkfac']
 
 emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk',  'hdwfr', 'wait', 'invt']
 
