@@ -18,7 +18,7 @@ def calc_slope_parallel(link_id):
     _elev_pts = global_elev_dict[link_id]
 
     config = yaml.safe_load(
-        open(os.path.join(configuration.args.configs_dir, "config.yaml"))
+        open(os.path.join(modules.configuration.args.configs_dir, "config.yaml"))
     )
     if config["output_crs"]:
         crs = config["output_crs"]

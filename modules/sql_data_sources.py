@@ -292,7 +292,7 @@ else:
     if config["update_network_from_projects"]:
         gdf_ProjectRoutes = open_from_file_gdb(
             config["file_gdb_path"],
-            layer=tables_config["project_routes"],
+            tables_config["project_routes"],
             output_crs=output_crs,
         )
 

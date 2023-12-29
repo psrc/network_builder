@@ -468,11 +468,11 @@ if __name__ == "__main__":
                     link_ids = bike_network["id"].tolist()
                     bike_pool = mp.Pool(
                         config["number_of_pools"],
-                        build_bike_network_parallel.init_pool,
+                        modules.build_bike_network_parallel.init_pool,
                         [bike_network, elev_dict],
                     )
                     avg_upslope = bike_pool.map(
-                        build_bike_network_parallel.calc_slope_parallel, link_ids
+                        modules.build_bike_network_parallel.calc_slope_parallel, link_ids
                     )
 
                     bike_pool.close()
