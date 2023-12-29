@@ -1,0 +1,23 @@
+mode_attributes: modeAttributes
+
+mode_tolls: modeTolls
+
+edges: TransRefEdges
+
+transit_lines: TransitLines
+
+transit_points: TransitPoints
+
+turn_movements: TurnMovements
+
+junctions: TransRefJunctions
+
+transit_frequencies: transitFrequency
+
+project_routes: ProjectRoutes
+
+projects_in_scenarios: tblProjectsInScenarios
+
+project_attributes: tblLineProjects
+
+point_events: evtPointProjectOutcomes
