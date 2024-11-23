@@ -35,7 +35,7 @@ class FlagNetworkFromProjects(object):
             self.config["project_buffer_dist"]
         )
 
-        edges = gpd.sjoin(self.network_gdf, buff_projects, how="inner", op="within")
+        edges = gpd.sjoin(self.network_gdf, buff_projects, how="inner", predicate="within")
 
         edges = edges.sort_values(by=["InServiceDate_right"], ascending=False)
 

@@ -247,7 +247,7 @@ else:
         config["file_gdb_path"], tables_config["mode_attributes"]
     )
 
-    df_modeAttributes = df_modeAttributes.drop("geometry", 1)
+    df_modeAttributes.drop(columns=["geometry"], inplace=True)
 
     df_tolls = open_from_file_gdb(config["file_gdb_path"], tables_config["mode_tolls"])
     df_tolls = df_tolls.drop("geometry", 1)
@@ -287,7 +287,7 @@ else:
             config["file_gdb_path"], layer=tables_config["transit_frequencies"]
         )
 
-        df_transit_frequencies = df_transit_frequencies.drop("geometry", 1)
+        df_transit_frequencies.drop(columns=["geometry"], inplace = True)
 
     if config["update_network_from_projects"]:
         gdf_ProjectRoutes = open_from_file_gdb(
@@ -303,19 +303,19 @@ else:
             config["file_gdb_path"], layer=tables_config["projects_in_scenarios"]
         )
 
-        df_tblProjectsInScenarios = df_tblProjectsInScenarios.drop("geometry", 1)
+        df_tblProjectsInScenarios.drop(columns=["geometry"], inplace = True)
 
         df_tblLineProjects = gpd.read_file(
             config["file_gdb_path"], layer=tables_config["project_attributes"]
         )
 
-        df_tblLineProjects = df_tblLineProjects.drop("geometry", 1)
+        df_tblLineProjects.drop(columns=["geometry"], inplace = True)
         # point events (park and rides)
         df_evtPointProjectOutcomes = gpd.read_file(
             config["file_gdb_path"], layer=tables_config["point_events"]
         )
 
-        df_evtPointProjectOutcomes = df_evtPointProjectOutcomes.drop("geometry", 1)
+        df_evtPointProjectOutcomes.drop(columns=["geometry"], inplace=True)
     else:
         gdf_ProjectRoutes = None
         df_tblProjectsInScenarios = None

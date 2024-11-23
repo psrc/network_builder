@@ -15,8 +15,9 @@ def trace_transit_route(route_id):
     points.sort_values('PointOrder', inplace = True)
     points_list = points['NewNodeID'].tolist()
     line['geometry'] = line.geometry.buffer(100)
-    edges = gpd.sjoin(global_edges, line, how='inner',
-                          op='within')
+    edges = global_edges[['geometry', 'i', 'j', 'weight']]
+    edges = gpd.sjoin(edges, line, how='inner',
+                          predicate='within')
     x = nx.DiGraph()
     G = nx.from_pandas_edgelist(edges, 'i', 'j', ['weight'], x)
         

@@ -23,7 +23,7 @@ file_gdb_path: T:/2021September/Stefan/network.gdb
 
 output_dir: E:/networks/test_2023
 
-number_of_pools: 1
+number_of_pools: 12
 
 model_year: 2023
 input_crs: 2285

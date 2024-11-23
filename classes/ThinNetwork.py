@@ -265,7 +265,7 @@ class ThinNetwork(object):
         for x in G.edges.items():
             edge_list.append(x[1])
         gdf = gpd.GeoDataFrame(edge_list)
-        gdf = gdf.append(one_way_keep[cols])
+        gdf = pd.concat([gdf,one_way_keep[cols]])
 
         return gdf
 

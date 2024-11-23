@@ -37,6 +37,7 @@ from shutil import copy2 as shcopy
 import multiprocessing as mp
 import modules.configuration
 
+sys.path.append(r'C:\Program Files\Bentley\OpenPaths\EMME 24.00.00\Python311\Lib\site-packages\jedi\third_party\typeshed\stdlib\2and3\xml\parsers')
 
 def add_run_args(parser, multiprocess=True):
     """
@@ -77,7 +78,8 @@ def nodes_from_edges(list_of_edges, edges):
 
 def get_potential_thin_nodes(edges):
     node_list = edges.INode.tolist() + edges.JNode.tolist()
-    df = pd.DataFrame(pd.Series(node_list).value_counts(), columns=["node_count"])
+    df = pd.DataFrame(pd.Series(node_list).value_counts())
+    df.rename(columns={"count" : "node_count"}, inplace = True)
     df = df[df.node_count == 2]
     return df.index.tolist()
 
@@ -401,7 +403,7 @@ if __name__ == "__main__":
                     stops_df["submode"] = mode
                     stops_df["x"] = stops_df.geometry.x
                     stops_df["y"] = stops_df.geometry.y
-                    df = df.append(stops_df[["submode", "x", "y", "PSRCJunctID"]])
+                    df = pd.concat([df, stops_df[["submode", "x", "y", "PSRCJunctID"]]])
                 # Now BRT
                 transit_edges_submode = gdf_TransitLines[
                     gdf_TransitLines["TransitType"] == 3
@@ -414,7 +416,7 @@ if __name__ == "__main__":
                 stops_df["submode"] = "z"
                 stops_df["x"] = stops_df.geometry.x
                 stops_df["y"] = stops_df.geometry.y
-                df = df.append(stops_df[["submode", "x", "y", "PSRCJunctID"]])
+                df = pd.concat([df, stops_df[["submode", "x", "y", "PSRCJunctID"]]])
 
                 # Now Street Car
                 transit_edges_submode = gdf_TransitLines[
@@ -428,13 +430,13 @@ if __name__ == "__main__":
                 stops_df["submode"] = "y"
                 stops_df["x"] = stops_df.geometry.x
                 stops_df["y"] = stops_df.geometry.y
-                df = df.append(stops_df[["submode", "x", "y", "PSRCJunctID"]])
+                df = pd.concat([df, stops_df[["submode", "x", "y", "PSRCJunctID"]]])
 
                 df = df.groupby(["submode", "PSRCJunctID"]).max().reset_index()
                 for submode, colname in config["submode_dict"].items():
                     df.loc[df["submode"] == submode, colname] = 1
                 df.fillna(0, inplace=True)
-                df.drop("submode", axis=1, inplace=True)
+                df.drop(columns=["submode"], inplace=True)
                 # df = df.groupby('PSRCJunctID').max().reset_index()
                 df.to_csv(
                     os.path.join(build_file_folder, "transit_stops.csv"), index=False
@@ -490,6 +492,8 @@ if __name__ == "__main__":
                 model_links["upslp"] = model_links["upslp"].fillna(0)
             else:
                 model_links["upslp"] = -1
+            
+            model_links.rename(columns={"id" : "link_id"}, inplace = True)
 
             if config["save_network_files"]:
                 model_nodes.to_file(
