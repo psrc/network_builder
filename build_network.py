@@ -1,3 +1,4 @@
+import pyexpat as expat
 import time
 import geopandas as gpd
 import pandas as pd
@@ -37,7 +38,6 @@ from shutil import copy2 as shcopy
 import multiprocessing as mp
 import modules.configuration
 
-sys.path.append(r'C:\Program Files\Bentley\OpenPaths\EMME 24.00.00\Python311\Lib\site-packages\jedi\third_party\typeshed\stdlib\2and3\xml\parsers')
 
 def add_run_args(parser, multiprocess=True):
     """
@@ -454,15 +454,16 @@ if __name__ == "__main__":
 
                     # Intersect elevation raster with all point features along each link
                     logger.info("Elevation raster start")
-                    pts = np.array(
-                        point_query(bike_network, config["raster_file_path"])
-                    )
+                    pts = point_query(bike_network, config["raster_file_path"])
+                    # pts = np.array(
+                    #     point_query(bike_network, config["raster_file_path"])
+                    # )
                     logger.info("Elevation raster done")
                     elev_dict = {}
 
                     for i in range(len(pts)):
                         id = bike_network.iloc[i].id
-                        elev_dict[id] = pts[i]
+                        elev_dict[id] = np.array(pts[i])
 
                     # Calculate slope between points for all links
                     # Each link is composed of multiple points, depending on line geometry and length

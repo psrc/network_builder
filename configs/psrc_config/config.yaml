@@ -63,7 +63,7 @@ project_buffer_dist : 1
 hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
-build_bike_network : False
+build_bike_network : True
 save_network_files : True  
 create_emme_network: True
 export_build_files: True
