@@ -86,10 +86,11 @@ class ThinNetwork(object):
             dup_edges.groupby(["id"]).apply(lambda x: list(x.PSRCEdgeID)).to_dict()
         )
 
-        for node_seq, edge_ids in dup_edges_dict.items():
-            self._logger.info(
-                "Warning! Node sequence %s is represented "
-                "by more than one edge: %s. Please Fix!" % (node_seq, edge_ids)
+        if len(dup_edges_dict) > 0: 
+            for node_seq, edge_ids in dup_edges_dict.items():
+                self._logger.info(
+                    "Warning! Node sequence %s is represented "
+                    "by more than one edge: %s. Please Fix!" % (node_seq, edge_ids)
             )
 
     def _thin_network(self):

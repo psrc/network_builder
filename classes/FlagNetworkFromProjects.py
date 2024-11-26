@@ -178,7 +178,7 @@ class FlagNetworkFromProjects(object):
             initial_edge_count = len(update_edges)
             project = self.project_gdf[self.project_gdf.projRteID == route_id]
 
-            if project.loc[project.index[0]].geometry.type == "MultiLineString":
+            if project.loc[project.index[0]].geometry.geom_type == "MultiLineString":
                 self._logger.info(
                     "Warning! Project %s is MultiLineString. Cannot update"
                     " network with this project!" % (route_id)

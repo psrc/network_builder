@@ -247,24 +247,24 @@ else:
         config["file_gdb_path"], tables_config["mode_attributes"]
     )
 
-    df_modeAttributes.drop(columns=["geometry"], inplace=True)
+    #df_modeAttributes.drop(columns=["geometry"], inplace=True)
 
     df_tolls = open_from_file_gdb(config["file_gdb_path"], tables_config["mode_tolls"])
-    df_tolls = df_tolls.drop("geometry", 1)
+    #df_tolls = df_tolls.drop("geometry", 1)
 
     gdf_TransRefEdges = open_from_file_gdb(
         config["file_gdb_path"], tables_config["edges"], output_crs=output_crs
     )
 
     gdf_TransRefEdges = gdf_TransRefEdges.explode()
-    gdf_TransRefEdges.index = gdf_TransRefEdges.index.droplevel(1)
+    #gdf_TransRefEdges.index = gdf_TransRefEdges.index.droplevel(1)
 
     gdf_TransitLines = open_from_file_gdb(
         config["file_gdb_path"], tables_config["transit_lines"], output_crs=output_crs
     )
 
     gdf_TransitLines = gdf_TransitLines.explode()
-    gdf_TransitLines.index = gdf_TransitLines.index.droplevel(1)
+    #gdf_TransitLines.index = gdf_TransitLines.index.droplevel(1)
 
     gdf_TransitPoints = open_from_file_gdb(
         config["file_gdb_path"], tables_config["transit_points"], output_crs=output_crs
@@ -275,7 +275,7 @@ else:
     )
 
     gdf_TurnMovements = gdf_TurnMovements.explode()
-    gdf_TurnMovements.index = gdf_TurnMovements.index.droplevel(1)
+    #gdf_TurnMovements.index = gdf_TurnMovements.index.droplevel(1)
 
     # Juncions
     gdf_Junctions = open_from_file_gdb(
@@ -287,7 +287,7 @@ else:
             config["file_gdb_path"], layer=tables_config["transit_frequencies"]
         )
 
-        df_transit_frequencies.drop(columns=["geometry"], inplace = True)
+        #df_transit_frequencies.drop(columns=["geometry"], inplace = True)
 
     if config["update_network_from_projects"]:
         gdf_ProjectRoutes = open_from_file_gdb(
@@ -297,25 +297,25 @@ else:
         )
 
         gdf_ProjectRoutes = gdf_ProjectRoutes.explode()
-        gdf_ProjectRoutes.index = gdf_ProjectRoutes.index.droplevel(1)
+        #gdf_ProjectRoutes.index = gdf_ProjectRoutes.index.droplevel(1)
 
         df_tblProjectsInScenarios = gpd.read_file(
             config["file_gdb_path"], layer=tables_config["projects_in_scenarios"]
         )
 
-        df_tblProjectsInScenarios.drop(columns=["geometry"], inplace = True)
+        #df_tblProjectsInScenarios.drop(columns=["geometry"], inplace = True)
 
         df_tblLineProjects = gpd.read_file(
             config["file_gdb_path"], layer=tables_config["project_attributes"]
         )
 
-        df_tblLineProjects.drop(columns=["geometry"], inplace = True)
+        #df_tblLineProjects.drop(columns=["geometry"], inplace = True)
         # point events (park and rides)
         df_evtPointProjectOutcomes = gpd.read_file(
             config["file_gdb_path"], layer=tables_config["point_events"]
         )
 
-        df_evtPointProjectOutcomes.drop(columns=["geometry"], inplace=True)
+        #df_evtPointProjectOutcomes.drop(columns=["geometry"], inplace=True)
     else:
         gdf_ProjectRoutes = None
         df_tblProjectsInScenarios = None
