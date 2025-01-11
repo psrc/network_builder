@@ -1,0 +1,263 @@
+# Type of data source that holds source data- valid choices are 'enterprise_gdb' or 'file_gdb'
+
+data_source_type: enterprise_gdb
+
+# The following should be filled out if using an 'enterprise_gdb' connection
+sde_schema: 'dbo'
+
+use_sqlalchemy: False
+
+#server: AWS-Prod-SQL\Sockeye
+server: AWS-SQL2022
+
+#database: OSMTest
+database: Plexus
+
+#version: "'DBO.Stefan'"
+version: "'dbo.DEFAULT'"
+
+
+# The following should be filled out if using a 'file_gdb' as data_source
+
+file_gdb_path: T:/2021September/Stefan/network.gdb
+
+
+# Standard user params:
+
+output_dir: C:/Stefan/networks/test_2023
+
+number_of_pools: 12
+
+model_year: 2023
+input_crs: 2285
+
+output_crs: null
+
+main_log_file : 'run_log'
+
+max_zone_number: 4000
+
+node_offset: 0
+
+max_regular_zone: 3700
+
+time_periods: ['AM','MD','PM','EV','NI']
+
+add_channelization: False
+
+
+# Project/Future network params
+update_network_from_projects : False
+
+scenario_name: remove_capacity_projects #as defined in the tblProjectsInScenarios table
+
+projects_version_year : 2023
+
+
+# Facilities where slope should be calculated; slope of 0 is assumed otherwise
+bike_facility_types : [5, 6, 7, 8, 9, 10, 11]
+
+# Projects are buffered before performing spatial join on edges to help select
+# Edges that may not be perfectly covered by project routes. Adjusting this could 
+# reduce errors reported in log file. 
+project_buffer_dist : 1
+
+# How far to shift HOV lanes from GP lanes:
+hov_shift_dist : 1.906090351
+
+build_transit_headways : True 
+build_bike_network : False
+save_network_files : True  
+create_emme_network: True
+export_build_files: True
+emme_folder_name: EMME
+emmebank_title : networks
+modes_file: inputs\modes.txt
+transit_vehicle_file: inputs\vehicles.txt
+
+submode_dict : { 'b': 'bus', 
+                 'c': 'commuter_rail',
+                 'r': 'light_rail',
+                 'f': 'ferry',
+                 'p': 'express',
+                 'x': 'frequent',
+                 'y': 'street_car',
+                 'z': 'brt'}
+
+# Bike Network
+elev_conversion: 3.28084    # Convert raster elevation from meters to feet
+raster_file_path: R:\e2projects_two\SoundCast\Inputs\slope\dem30m.tif
+ferry_link_factor: 2.0
+
+
+transit_headway_mapper : 
+  'hdw_5to6' : ['hour_5']
+  'hdw_6to7' : ['hour_6']
+  'hdw_7to8' : ['hour_7'] 
+  'hdw_8to9' : ['hour_8']
+  'hdw_9to10' : ['hour_9']
+  'hdw_10to14' : ['hour_10', 'hour_11', 'hour_12', 'hour_13']
+  'hdw_14to15' : ['hour_14']
+  'hdw_15to16' : ['hour_15']
+  'hdw_16to17' : ['hour_16']
+  'hdw_17to18' : ['hour_17']
+  'hdw_18to20' : ['hour_18', 'hour_19']
+  'hdw_20to5' : ['hour_20', 'hour_21', 'hour_22', 'hour_23', 'hour_24', 'hour_25']
+
+
+reversibles:
+  'AM' : [False, False]
+  'MD' : [True, False]
+  'PM' : [False, True]
+  'EV' : [False, True]
+  'NI' : [False, True]
+
+extra_attributes:
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'PSRCEdgeID', 'upslp','bkfac', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'FGTS', 'ttf']
+  'NODE' : ['lr_walk', 'hdwfr', 'wait', 'invt']
+  'TRANSIT_LINE' : ['TransitType']
+
+# Directional attributes used for project updates & network thinning.
+dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLanesGPNI', 'JILanesGPAM', 
+'JILanesGPMD', 'JILanesGPPM', 'JILanesGPEV', 'JILanesGPNI', 'IJlanesGPadjust', 'JIlanesGPadjust', 
+'IJLanesHOVAM', 'IJLanesHOVMD', 'IJLanesHOVPM', 'IJLanesHOVEV', 'IJLanesHOVNI', 'JILanesHOVAM', 
+'JILanesHOVMD', 'JILanesHOVPM', 'JILanesHOVEV', 'JILanesHOVNI', 'IJSpeedLimit', 'JISpeedLimit', 
+'IJVDFunc', 'JIVDFunc', 'IJLaneCapGP', 'IJLaneCapHOV', 'JILaneCapGP', 'JILaneCapHOV', 'IJSideWalks', 
+'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK','IJBikeType','JIBikeType']
+
+toll_columns: ['PSRCEdgeID']  
+
+dir_toll_columns : ['IJtollSOVAM', 
+'IJtollSOVMD', 'IJtollSOVPM', 'IJtollSOVEV', 'IJtollSOVNI', 'JItollSOVAM', 'JItollSOVMD', 'JItollSOVPM', 
+'JItollSOVEV', 'JItollSOVNI', 'IJtollHOV2AM', 'IJtollHOV2MD', 'IJtollHOV2PM', 'IJtollHOV2EV', 'IJtollHOV2NI', 
+'JItollHOV2AM', 'JItollHOV2MD', 'JItollHOV2PM','JItollHOV2EV', 'JItollHOV2NI', 'IJtollHOV3AM', 'IJtollHOV3MD',
+'IJtollHOV3PM', 'IJtollHOV3EV', 'IJtollHOV3NI', 'JItollHOV3AM','JItollHOV3MD', 'JItollHOV3PM', 'JItollHOV3EV', 
+'JItollHOV3NI', 'IJtollTrkLtAM', 'IJtollTrkLtMD', 'IJtollTrkLtPM', 'IJtollTrkLtEV', 'IJtollTrkLtNI', 'JItollTrkLtAM', 
+'JItollTrkLtMD', 'JItollTrkLtPM','JItollTrkLtEV', 'JItollTrkLtNI', 'IJtollTrkMedAM','IJtollTrkMedMD', 'IJtollTrkMedPM', 
+'IJtollTrkMedEV','IJtollTrkMedNI', 'JItollTrkMedAM', 'JItollTrkMedMD','JItollTrkMedPM', 'JItollTrkMedEV', 'JItollTrkMedNI', 
+'IJtollTrkHvyAM', 'IJtollTrkHvyMD', 'IJtollTrkHvyPM','IJtollTrkHvyEV', 'IJtollTrkHvyNI', 'JItollTrkHvyAM', 'JItollTrkHvyMD', 
+'JItollTrkHvyPM', 'JItollTrkHvyEV','JItollTrkHvyNI']
+
+# Non-Directional attributes used for networkt thnning.
+non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing']
+
+# Attributes in addition to the dir_attributes that can get updated by projects
+project_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway', 'InServiceDate']
+
+# Non directional attributes that can be updated by a project
+project_update_columns : ['Oneway']
+
+intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'geometry', 'projRteID', 'Processing']
+
+emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'ttf']
+
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed', 'bkfac']
+
+emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk',  'hdwfr', 'wait', 'invt']
+
+
+# links with these modes use time, not speed limit. 
+link_time_facility_types : [12, 13, 15, 16]
+
+hot_rate_dict: {'AM' : 35, 'MD' : 10, 'PM' : 35, 'EV' : 10, 'NI' : 10}
+
+hot_tolls:
+  5: ['toll1']
+  6: ['toll1', 'toll2']
+  12: ['toll1']
+  13: ['toll1', 'toll2']
+
+walk_links:
+  direction: 1
+  i: NewINode
+  j: NewJNode
+  modes: 'wk'
+  type: 90
+  lanes: 1
+  vdf: 9
+  ul1: 0
+  ul2: 3
+  ul3: 0
+  toll1: 0
+  toll2: 0 
+  toll3: 0
+  trkc1: 0
+  trkc2: 0 
+  trkc3: 0
+  ttf: 0
+
+weave_links:
+  direction: 1
+  i: NewINode
+  j: NewJNode
+  modes: 'ashijvutbpwl'
+  length : 0.01
+  type: 90
+  lanes: 1
+  vdf: 10
+  ul1: 2000
+  ul2: 0
+  ul3: 0
+  toll1: 0
+  toll2: 0 
+  toll3: 0
+  trkc1: 0
+  trkc2: 0 
+  trkc3: 0
+  ttf: 0
+
+standard_links:
+  direction: 1
+  i: NewINode
+  j: NewJNode
+  modes: Modes
+  type: LinkType
+  lanes: IJLanesGP
+  vdf: IJVDFunc
+  ul1: IJLaneCapGP
+  ul2: IJSpeedLimit
+  ul3: NewFacilityType
+  toll1: IJtollSOV
+  toll2: IJtollHOV2 
+  toll3: IJtollHOV3
+  trkc1: IJtollTrkLt
+  trkc2: IJtollTrkMed 
+  trkc3: IJtollTrkHvy
+  ttf: IJLanesTR
+
+bat_links:
+  vdf: 9
+  ul1: 0
+  ul3: 0
+  
+
+
+hov_capacity: 'IJLaneCapHOV'
+
+hov_lanes:
+  1: 1
+  2: 1
+  3: 1
+  4: 1
+  5: 1
+  6: 1
+  7: 2
+  12: 2
+  13: 2
+  14: 1
+
+hov_modes:
+  1: 'ahijbp'
+  2: 'aijbp'
+  3: 'abp'
+  4: 'abp'
+  5: 'ashijbp'
+  6: 'ashijvbp'
+  7: 'ahijbp'
+  12: 'ashijbp'
+  13: 'ashijvbp'
+  14: 'ashijvbp'
+
+reverse_walk_link_facility_types : [3, 5, 6, 7, 8, 9]
+standard_facility_types : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
