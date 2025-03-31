@@ -82,16 +82,16 @@ class ThinNetwork(object):
         full_net["freq"] = full_net.groupby("id")["id"].transform("count")
 
         dup_edges = full_net.loc[full_net.freq > 1]
-        dup_edges_dict = (
-            dup_edges.groupby(["id"]).apply(lambda x: list(x.PSRCEdgeID)).to_dict()
-        )
+        if not dup_edges.empty:
+            dup_edges_dict = (
+                dup_edges.groupby(["id"]).apply(lambda x: list(x.PSRCEdgeID)).to_dict()
+                )
 
-        if len(dup_edges_dict) > 0: 
             for node_seq, edge_ids in dup_edges_dict.items():
                 self._logger.info(
                     "Warning! Node sequence %s is represented "
                     "by more than one edge: %s. Please Fix!" % (node_seq, edge_ids)
-            )
+                    )
 
     def _thin_network(self):
         """

@@ -386,48 +386,52 @@ class FlagNetworkFromProjects(object):
 
         # Deal with edges that are updated by more than one project
         multiple_projects = merged_projects[merged_projects.index.value_counts() > 1]
-        multiple_projects.sort_values(
-            by=["InServiceDate"], ascending=False, inplace=True
-        )
-        multiple_projects.reset_index(inplace=True)
 
-        # Create a dataframe that has one unique edge for multiple projects.
-        # This will then be updated with the correct attributes from multiple projects.
-        unique_edges_df = multiple_projects.groupby("PSRCEdgeID").first()
+        if not multiple_projects.empty:
+            multiple_projects.sort_values(
+                by=["InServiceDate"], ascending=False, inplace=True
+            )
+            multiple_projects.reset_index(inplace=True)
 
-        row_list = []
-        for edge_id in multiple_projects["PSRCEdgeID"].unique():
-            # Dict to hold correct attributes for each edge
-            row_dict = {"PSRCEdgeID": edge_id}
-            edges = multiple_projects[multiple_projects["PSRCEdgeID"] == edge_id]
-            for col in (
-                self.config["dir_columns"] + self.config["project_update_columns"]
-            ):
-                # If all values are -1
-                if max(edges[col].values) == -1:
-                    row_dict[col] = -1
-                elif np.isnan(np.min(edges[col].values)):
-                    self._logger.info(
-                        "Fatal: Null values encountered. Please check %s attribute from proRteID %s for Null values!"
-                        % (col, str(list(edges.projRteID.values)))
-                    )
-                    sys.exit(1)
+            # Create a dataframe that has one unique edge for multiple projects.
+            # This will then be updated with the correct attributes from multiple projects.
+            unique_edges_df = multiple_projects.groupby("PSRCEdgeID").first()
 
-                else:
-                    field_values = edges[col].values
-                    # Get rid of any -1s, which means no change from that project
-                    field_value = field_values[field_values > -1]
-                    # Get the value of that has the farthest horizon year-
-                    # The first value because the df is ordered by InServiceDate in descending order.
-                    row_dict[col] = field_value[0]
-            row_list.append(row_dict)
-        update_df = pd.DataFrame(row_list)
-        update_df.set_index("PSRCEdgeID", inplace=True)
-        unique_edges_df.update(update_df)
+            row_list = []
+            for edge_id in multiple_projects["PSRCEdgeID"].unique():
+                # Dict to hold correct attributes for each edge
+                row_dict = {"PSRCEdgeID": edge_id}
+                edges = multiple_projects[multiple_projects["PSRCEdgeID"] == edge_id]
+                for col in (
+                    self.config["dir_columns"] + self.config["project_update_columns"]
+                ):
+                    # If all values are -1
+                    if max(edges[col].values) == -1:
+                        row_dict[col] = -1
+                    elif np.isnan(np.min(edges[col].values)):
+                        self._logger.info(
+                            "Fatal: Null values encountered. Please check %s attribute from proRteID %s for Null values!"
+                            % (col, str(list(edges.projRteID.values)))
+                        )
+                        sys.exit(1)
 
-        # get rid of duplicate edges:
-        merged_projects = merged_projects[merged_projects.index.value_counts() == 1]
-        merged_projects = pd.concat([merged_projects, unique_edges_df])
+                    else:
+                        field_values = edges[col].values
+                        # Get rid of any -1s, which means no change from that project
+                        field_value = field_values[field_values > -1]
+                        # Get the value of that has the farthest horizon year-
+                        # The first value because the df is ordered by InServiceDate in descending order.
+                        row_dict[col] = field_value[0]
+                row_list.append(row_dict)
+            update_df = pd.DataFrame(row_list)
+            update_df.set_index("PSRCEdgeID", inplace=True)
+            unique_edges_df.update(update_df)
+
+            # get rid of duplicate edges:
+            merged_projects = merged_projects[merged_projects.index.value_counts() == 1]
+            merged_projects = pd.concat([merged_projects, unique_edges_df])
+        
+        ############################
         # Recode -1s to Nan so they do not update scenario edges
         merged_projects.replace(-1, np.NaN, inplace=True)
         merged_projects.replace("-1", np.NaN, inplace=True)
