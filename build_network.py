@@ -1,3 +1,4 @@
+import pyogrio
 import pyexpat as expat
 import time
 import geopandas as gpd
@@ -497,6 +498,10 @@ if __name__ == "__main__":
             model_links.rename(columns={"id" : "link_id"}, inplace = True)
 
             if config["save_network_files"]:
+                # using pyogrio driver was causing an error here.
+                # but need to use it earlier to import from file gdb. 
+                gpd.options.io_engine = "fiona"
+
                 model_nodes.to_file(
                     os.path.join(dir, time_period + "_junctions.shp"),
                     driver="ESRI Shapefile",
