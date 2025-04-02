@@ -115,10 +115,10 @@ class ConfigureTransitSegments(object):
     def _add_ttf(self, row):
         link = self.model_links.loc[row.ij]
         if (
-            link.mode == "bp"
-            or link.mode == "bwlp"
-            or link.mode == "brp"
-            or link.mode == "bwp"
+            link.modes == "abp"
+            or link.modes == "abwlp"
+            or link.modes == "abrp"
+            or link.modes == "abwp"
         ):
             return 4
         elif row.ttf > 0:
@@ -131,10 +131,10 @@ class ConfigureTransitSegments(object):
         ):
             return 5
         elif (
-            link.mode == "bp"
-            or link.mode == "bwlp"
-            or link.mode == "brp"
-            or link.mode == "bwp"
+            link.modes == "bp"
+            or link.modes == "bwlp"
+            or link.modes == "brp"
+            or link.modes == "bwp"
         ):
             return 4
         elif row.stop_to_stop_distance > 1.5:

@@ -3,12 +3,15 @@
 data_source_type: enterprise_gdb
 
 # The following should be filled out if using an 'enterprise_gdb' connection
+sde_schema: 'sde'
 
 use_sqlalchemy: False
 
 server: AWS-Prod-SQL\Sockeye
+#server: AWS-SQL2022
 
 database: OSMTest
+#database: Plexus
 
 #version: "'DBO.Stefan'"
 version: "'sde.DEFAULT'"
@@ -21,9 +24,9 @@ file_gdb_path: T:/2021September/Stefan/network.gdb
 
 # Standard user params:
 
-output_dir: E:/networks/test_2023
+output_dir: C:/Stefan/networks/test_2023
 
-number_of_pools: 1
+number_of_pools: 12
 
 model_year: 2023
 input_crs: 2285
@@ -63,7 +66,7 @@ project_buffer_dist : 1
 hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
-build_bike_network : False
+build_bike_network : True
 save_network_files : True  
 create_emme_network: True
 export_build_files: True
@@ -120,7 +123,7 @@ dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLan
 'IJLanesHOVAM', 'IJLanesHOVMD', 'IJLanesHOVPM', 'IJLanesHOVEV', 'IJLanesHOVNI', 'JILanesHOVAM', 
 'JILanesHOVMD', 'JILanesHOVPM', 'JILanesHOVEV', 'JILanesHOVNI', 'IJSpeedLimit', 'JISpeedLimit', 
 'IJVDFunc', 'JIVDFunc', 'IJLaneCapGP', 'IJLaneCapHOV', 'JILaneCapGP', 'JILaneCapHOV', 'IJSideWalks', 
-'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK','IJBikeFacility','JIBikeFacility']
+'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK','IJBikeType','JIBikeType']
 
 toll_columns: ['PSRCEdgeID']  
 

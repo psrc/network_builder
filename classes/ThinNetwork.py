@@ -82,15 +82,16 @@ class ThinNetwork(object):
         full_net["freq"] = full_net.groupby("id")["id"].transform("count")
 
         dup_edges = full_net.loc[full_net.freq > 1]
-        dup_edges_dict = (
-            dup_edges.groupby(["id"]).apply(lambda x: list(x.PSRCEdgeID)).to_dict()
-        )
+        if not dup_edges.empty:
+            dup_edges_dict = (
+                dup_edges.groupby(["id"]).apply(lambda x: list(x.PSRCEdgeID)).to_dict()
+                )
 
-        for node_seq, edge_ids in dup_edges_dict.items():
-            self._logger.info(
-                "Warning! Node sequence %s is represented "
-                "by more than one edge: %s. Please Fix!" % (node_seq, edge_ids)
-            )
+            for node_seq, edge_ids in dup_edges_dict.items():
+                self._logger.info(
+                    "Warning! Node sequence %s is represented "
+                    "by more than one edge: %s. Please Fix!" % (node_seq, edge_ids)
+                    )
 
     def _thin_network(self):
         """
@@ -265,7 +266,7 @@ class ThinNetwork(object):
         for x in G.edges.items():
             edge_list.append(x[1])
         gdf = gpd.GeoDataFrame(edge_list)
-        gdf = gdf.append(one_way_keep[cols])
+        gdf = pd.concat([gdf,one_way_keep[cols]])
 
         return gdf
 

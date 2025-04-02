@@ -1,3 +1,5 @@
+import pyogrio
+import pyexpat as expat
 import time
 import geopandas as gpd
 import pandas as pd
@@ -77,7 +79,8 @@ def nodes_from_edges(list_of_edges, edges):
 
 def get_potential_thin_nodes(edges):
     node_list = edges.INode.tolist() + edges.JNode.tolist()
-    df = pd.DataFrame(pd.Series(node_list).value_counts(), columns=["node_count"])
+    df = pd.DataFrame(pd.Series(node_list).value_counts())
+    df.rename(columns={"count" : "node_count"}, inplace = True)
     df = df[df.node_count == 2]
     return df.index.tolist()
 
@@ -401,7 +404,7 @@ if __name__ == "__main__":
                     stops_df["submode"] = mode
                     stops_df["x"] = stops_df.geometry.x
                     stops_df["y"] = stops_df.geometry.y
-                    df = df.append(stops_df[["submode", "x", "y", "PSRCJunctID"]])
+                    df = pd.concat([df, stops_df[["submode", "x", "y", "PSRCJunctID"]]])
                 # Now BRT
                 transit_edges_submode = gdf_TransitLines[
                     gdf_TransitLines["TransitType"] == 3
@@ -414,7 +417,7 @@ if __name__ == "__main__":
                 stops_df["submode"] = "z"
                 stops_df["x"] = stops_df.geometry.x
                 stops_df["y"] = stops_df.geometry.y
-                df = df.append(stops_df[["submode", "x", "y", "PSRCJunctID"]])
+                df = pd.concat([df, stops_df[["submode", "x", "y", "PSRCJunctID"]]])
 
                 # Now Street Car
                 transit_edges_submode = gdf_TransitLines[
@@ -428,13 +431,13 @@ if __name__ == "__main__":
                 stops_df["submode"] = "y"
                 stops_df["x"] = stops_df.geometry.x
                 stops_df["y"] = stops_df.geometry.y
-                df = df.append(stops_df[["submode", "x", "y", "PSRCJunctID"]])
+                df = pd.concat([df, stops_df[["submode", "x", "y", "PSRCJunctID"]]])
 
                 df = df.groupby(["submode", "PSRCJunctID"]).max().reset_index()
                 for submode, colname in config["submode_dict"].items():
                     df.loc[df["submode"] == submode, colname] = 1
                 df.fillna(0, inplace=True)
-                df.drop("submode", axis=1, inplace=True)
+                df.drop(columns=["submode"], inplace=True)
                 # df = df.groupby('PSRCJunctID').max().reset_index()
                 df.to_csv(
                     os.path.join(build_file_folder, "transit_stops.csv"), index=False
@@ -452,15 +455,16 @@ if __name__ == "__main__":
 
                     # Intersect elevation raster with all point features along each link
                     logger.info("Elevation raster start")
-                    pts = np.array(
-                        point_query(bike_network, config["raster_file_path"])
-                    )
+                    pts = point_query(bike_network, config["raster_file_path"])
+                    # pts = np.array(
+                    #     point_query(bike_network, config["raster_file_path"])
+                    # )
                     logger.info("Elevation raster done")
                     elev_dict = {}
 
                     for i in range(len(pts)):
                         id = bike_network.iloc[i].id
-                        elev_dict[id] = pts[i]
+                        elev_dict[id] = np.array(pts[i])
 
                     # Calculate slope between points for all links
                     # Each link is composed of multiple points, depending on line geometry and length
@@ -490,8 +494,14 @@ if __name__ == "__main__":
                 model_links["upslp"] = model_links["upslp"].fillna(0)
             else:
                 model_links["upslp"] = -1
+            
+            model_links.rename(columns={"id" : "link_id"}, inplace = True)
 
             if config["save_network_files"]:
+                # using pyogrio driver was causing an error here.
+                # but need to use it earlier to import from file gdb. 
+                gpd.options.io_engine = "fiona"
+
                 model_nodes.to_file(
                     os.path.join(dir, time_period + "_junctions.shp"),
                     driver="ESRI Shapefile",

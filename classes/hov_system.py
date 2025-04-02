@@ -112,7 +112,7 @@ class BuildHOVSystem(object):
 
         # JNode is on the HOV end, INode is on the GP end
         weave_edges["NewJNode"] = weave_edges["ScenarioNodeID"]
-        weave_edges.drop("ScenarioNodeID", 1, inplace=True)
+        weave_edges.drop(columns=["ScenarioNodeID"], inplace=True)
         # Left join gives the GP counterpoint to the HOV node
         weave_edges = weave_edges.merge(
             self.junctions_gdf, on="PSRCjunctID", how="left"
@@ -120,8 +120,8 @@ class BuildHOVSystem(object):
 
         # Create line geometry using the GP & HOV Junctions
         weave_edges["geometry"] = weave_edges.apply(self._create_edge, axis=1)
-        weave_edges.drop("geometry_y", 1, inplace=True)
-        weave_edges.drop("geometry_x", 1, inplace=True)
+        weave_edges.drop(columns=["geometry_x", "geometry_y"], inplace=True)
+        #weave_edges.drop("geometry_x", 1, inplace=True)
         weave_edges["NewINode"] = weave_edges["ScenarioNodeID"]
         weave_edges["FacilityType"] = 98
         weave_edges["Oneway"] = 2

@@ -1,31 +1,34 @@
 # Type of data source that holds source data- valid choices are 'enterprise_gdb' or 'file_gdb'
 
-data_source_type: file_gdb
+data_source_type: enterprise_gdb
 
 # The following should be filled out if using an 'enterprise_gdb' connection
+sde_schema: 'dbo'
 
 use_sqlalchemy: False
 
-server: AWS-Prod-SQL\Sockeye
+#server: AWS-Prod-SQL\Sockeye
+server: AWS-SQL2022
 
-database: OSMTest
+#database: OSMTest
+database: Plexus
 
-version: "'DBO.Nick'"
-#version: "'sde.DEFAULT'"
+#version: "'DBO.Stefan'"
+version: "'dbo.DEFAULT'"
 
 
 # The following should be filled out if using a 'file_gdb' as data_source
 
-file_gdb_path: T:/2023December/Kris/Nagendra/New File Geodatabase.gdb
+file_gdb_path: T:/2021September/Stefan/network.gdb
 
 
 # Standard user params:
 
-output_dir: E:/networks/ST/st_2040_with_2030_transit
+output_dir: C:/Stefan/networks/test_2023
 
 number_of_pools: 12
 
-model_year: 2040
+model_year: 2023
 input_crs: 2285
 
 output_crs: null
@@ -44,11 +47,11 @@ add_channelization: False
 
 
 # Project/Future network params
-update_network_from_projects : True
+update_network_from_projects : False
 
-scenario_name: constrained_2050 #as defined in the tblProjectsInScenarios table
+scenario_name: remove_capacity_projects #as defined in the tblProjectsInScenarios table
 
-projects_version_year : 2022
+projects_version_year : 2023
 
 
 # Facilities where slope should be calculated; slope of 0 is assumed otherwise
@@ -63,7 +66,7 @@ project_buffer_dist : 1
 hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
-build_bike_network : True
+build_bike_network : False
 save_network_files : True  
 create_emme_network: True
 export_build_files: True
@@ -136,7 +139,7 @@ dir_toll_columns : ['IJtollSOVAM',
 'JItollTrkHvyPM', 'JItollTrkHvyEV','JItollTrkHvyNI']
 
 # Non-Directional attributes used for networkt thnning.
-non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
+non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
 project_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway', 'InServiceDate']
@@ -144,11 +147,11 @@ project_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway'
 # Non directional attributes that can be updated by a project
 project_update_columns : ['Oneway']
 
-intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'geometry', 'projRteID', 'Processing_x']
+intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'geometry', 'projRteID', 'Processing']
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'ttf']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed', 'bkfac']
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed', 'bkfac']
 
 emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk',  'hdwfr', 'wait', 'invt']
 

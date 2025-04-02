@@ -48,12 +48,14 @@ def read_from_sde(
         # connection_string = '''mssql+pyodbc://%s/%s?driver=ODBC Driver 17 for SQL Server?Trusted_Connection=yes''' % (config['server'], config['database'])
         engine = sqlalchemy.create_engine(connection_string)
         con = engine.connect()
-        con.execute("sde.set_current_version {0}".format(version))
+        #con.execute("dbo.set_current_version {0}".format(version))
+        con.execute(f"{config['sde_schema']}.set_current_version {version}")
 
     else:
         con = connect(config["server"], database=config["database"])
         cursor = con.cursor()
-        cursor.execute("sde.set_current_version %s", version[1:-1])
+        #cursor.execute("dbo.set_current_version %s", version[1:-1])
+        cursor.execute(f"{config['sde_schema']}.set_current_version {version}")
 
     if is_table:
         gdf = pd.read_sql("select * from %s" % (feature_class_name), con=con)
@@ -133,14 +135,15 @@ if config["data_source_type"] == "enterprise_gdb":
     version = config["version"]
 
     # modeAttributes
-    df_modeAttributes = read_from_sde(
-        config,
-        tables_config["mode_attributes"],
-        version,
-        crs=input_crs,
-        output_crs=output_crs,
-        is_table=True,
-    )
+    if "mode_attributes" in tables_config.keys():
+        df_modeAttributes = read_from_sde(
+            config,
+            tables_config["mode_attributes"],
+            version,
+            crs=input_crs,
+            output_crs=output_crs,
+            is_table=True,
+        )
 
     df_tolls = read_from_sde(
         config,
@@ -243,28 +246,29 @@ if config["data_source_type"] == "enterprise_gdb":
         df_evtPointProjectOutcomes = None
 
 else:
-    df_modeAttributes = open_from_file_gdb(
-        config["file_gdb_path"], tables_config["mode_attributes"]
-    )
+    if "mode_attributes" in tables_config.keys():
+        df_modeAttributes = open_from_file_gdb(
+            config["file_gdb_path"], tables_config["mode_attributes"]
+        )
 
-    df_modeAttributes = df_modeAttributes.drop("geometry", 1)
+    #df_modeAttributes.drop(columns=["geometry"], inplace=True)
 
     df_tolls = open_from_file_gdb(config["file_gdb_path"], tables_config["mode_tolls"])
-    df_tolls = df_tolls.drop("geometry", 1)
+    #df_tolls = df_tolls.drop("geometry", 1)
 
     gdf_TransRefEdges = open_from_file_gdb(
         config["file_gdb_path"], tables_config["edges"], output_crs=output_crs
     )
 
     gdf_TransRefEdges = gdf_TransRefEdges.explode()
-    gdf_TransRefEdges.index = gdf_TransRefEdges.index.droplevel(1)
+    #gdf_TransRefEdges.index = gdf_TransRefEdges.index.droplevel(1)
 
     gdf_TransitLines = open_from_file_gdb(
         config["file_gdb_path"], tables_config["transit_lines"], output_crs=output_crs
     )
 
     gdf_TransitLines = gdf_TransitLines.explode()
-    gdf_TransitLines.index = gdf_TransitLines.index.droplevel(1)
+    #gdf_TransitLines.index = gdf_TransitLines.index.droplevel(1)
 
     gdf_TransitPoints = open_from_file_gdb(
         config["file_gdb_path"], tables_config["transit_points"], output_crs=output_crs
@@ -275,7 +279,7 @@ else:
     )
 
     gdf_TurnMovements = gdf_TurnMovements.explode()
-    gdf_TurnMovements.index = gdf_TurnMovements.index.droplevel(1)
+    #gdf_TurnMovements.index = gdf_TurnMovements.index.droplevel(1)
 
     # Juncions
     gdf_Junctions = open_from_file_gdb(
@@ -287,7 +291,7 @@ else:
             config["file_gdb_path"], layer=tables_config["transit_frequencies"]
         )
 
-        df_transit_frequencies = df_transit_frequencies.drop("geometry", 1)
+        #df_transit_frequencies.drop(columns=["geometry"], inplace = True)
 
     if config["update_network_from_projects"]:
         gdf_ProjectRoutes = open_from_file_gdb(
@@ -297,25 +301,25 @@ else:
         )
 
         gdf_ProjectRoutes = gdf_ProjectRoutes.explode()
-        gdf_ProjectRoutes.index = gdf_ProjectRoutes.index.droplevel(1)
+        #gdf_ProjectRoutes.index = gdf_ProjectRoutes.index.droplevel(1)
 
         df_tblProjectsInScenarios = gpd.read_file(
             config["file_gdb_path"], layer=tables_config["projects_in_scenarios"]
         )
 
-        df_tblProjectsInScenarios = df_tblProjectsInScenarios.drop("geometry", 1)
+        #df_tblProjectsInScenarios.drop(columns=["geometry"], inplace = True)
 
         df_tblLineProjects = gpd.read_file(
             config["file_gdb_path"], layer=tables_config["project_attributes"]
         )
 
-        df_tblLineProjects = df_tblLineProjects.drop("geometry", 1)
+        #df_tblLineProjects.drop(columns=["geometry"], inplace = True)
         # point events (park and rides)
         df_evtPointProjectOutcomes = gpd.read_file(
             config["file_gdb_path"], layer=tables_config["point_events"]
         )
 
-        df_evtPointProjectOutcomes = df_evtPointProjectOutcomes.drop("geometry", 1)
+        #df_evtPointProjectOutcomes.drop(columns=["geometry"], inplace=True)
     else:
         gdf_ProjectRoutes = None
         df_tblProjectsInScenarios = None
@@ -328,9 +332,11 @@ df_tolls = df_tolls[config["toll_columns"] + config["dir_toll_columns"]]
 
 # Edges
 gdf_TransRefEdges = gdf_TransRefEdges[gdf_TransRefEdges.length > 0]
-gdf_TransRefEdges = gdf_TransRefEdges.merge(
-    df_modeAttributes, how="left", on="PSRCEdgeID"
-)
+
+if "mode_attributes" in tables_config.keys():
+    gdf_TransRefEdges = gdf_TransRefEdges.merge(
+        df_modeAttributes, how="left", on="PSRCEdgeID"
+    )
 
 gdf_TransRefEdges = gdf_TransRefEdges.merge(df_tolls, how="left", on="PSRCEdgeID")
 
