@@ -8,21 +8,21 @@ import os, sys, errno
 import yaml
 import shutil
 from shutil import copy2 as shcopy
-import modules.configuration
+# import modules.configuration
 
 # sys.path.append(os.getcwd())
 
-config = yaml.safe_load(
-    open(os.path.join(modules.configuration.args.configs_dir, "config.yaml"))
-)
+# config = yaml.safe_load(
+#     open(os.path.join(modules.configuration.args.configs_dir, "config.yaml"))
+# )
 
 
-def setup_custom_logger(name):
-    if os.path.exists(config["output_dir"]):
-        shutil.rmtree(config["output_dir"])
+def setup_custom_logger(name, config):
+    if os.path.exists(config.output_dir):
+        shutil.rmtree(config.output_dir)
     # create dir for main log file if it doesn't exist
     try:
-        os.makedirs(os.path.join(config["output_dir"], "logs"))
+        os.makedirs(os.path.join(config.output_dir, "logs"))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
@@ -32,7 +32,7 @@ def setup_custom_logger(name):
     # except OSError:
     #    pass
     logging.basicConfig(
-        filename=os.path.join(config["output_dir"], "logs", config["main_log_file"]),
+        filename=os.path.join(config.output_dir, "logs", config.main_log_file),
         format="%(asctime)s %(message)s",
         datefmt="%m/%d/%Y %I:%M:%S %p",
     )

@@ -1,18 +1,19 @@
 import geopandas as gpd
 import pandas as pd
-import modules.log_controller
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
 
 
 class BuildZoneInputs(object):
-    def __init__(self, scenario_junctions, projects_gdf, point_events_df, config):
+    def __init__(
+        self, scenario_junctions, projects_gdf, point_events_df, config, logger
+    ):
         self.scenario_junctions = scenario_junctions
         self.project_gdf = projects_gdf
         self.point_events_df = point_events_df
         self.config = config
-        self._logger = modules.log_controller.logging.getLogger("main_logger")
+        self._logger = logger
 
     def build_zone_inputs(self):
         zone_nodes_df = self.scenario_junctions.loc[
@@ -22,7 +23,7 @@ class BuildZoneInputs(object):
 
         zone_nodes_df["XCoord"] = zone_nodes_df.geometry.x
         zone_nodes_df["YCoord"] = zone_nodes_df.geometry.y
-        if self.config["update_network_from_projects"]:
+        if self.config.update_network_from_projects:
             zone_nodes_df.set_index("PSRCjunctID", inplace=True)
             p_r_projects = self.project_gdf[self.project_gdf["withEvents"] == 2][
                 "projRteID"
@@ -46,7 +47,7 @@ class BuildZoneInputs(object):
         # column for non park & rides, internal zones
         zone_nodes_df["Dest_eligible"] = 0
         zone_nodes_df.loc[
-            zone_nodes_df["i"] <= self.config["max_regular_zone"], "Dest_eligible"
+            zone_nodes_df["i"] <= self.config.max_regular_zone, "Dest_eligible"
         ] = 1
 
         # rename some columns for the taz file
@@ -57,6 +58,11 @@ class BuildZoneInputs(object):
         p_r_df = zone_nodes_df.loc[zone_nodes_df["Capacity"] > 0].copy()
         # rename some columns for the park and ride file
 
-        p_r_df = p_r_df.rename(columns={"Zone_id": "ZoneID", "zone_ordinal": "NodeID",})
+        p_r_df = p_r_df.rename(
+            columns={
+                "Zone_id": "ZoneID",
+                "zone_ordinal": "NodeID",
+            }
+        )
 
         return (zone_nodes_df, p_r_df)

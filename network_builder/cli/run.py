@@ -1,43 +1,31 @@
-import pyogrio
-import pyexpat as expat
-import time
-import geopandas as gpd
-import pandas as pd
-import os
 import sys
-import errno
-import numpy as np
-from shapely.geometry import LineString
-from shapely.geometry import Point
-from rasterstats import zonal_stats, point_query
+import argparse
+import pandas as pd
 import yaml
-from classes.FlagNetworkFromProjects import *
-from classes.ThinNetwork import *
-from classes.hov_system import *
-from classes.BuildScenarioLinks import *
-from classes.ConfigureTransitSegments import *
-from classes.EmmeProject import *
-from classes.EmmeNetwork import *
-from classes.BuildZoneInputs import *
-from classes.TransitHeadways import *
-from classes.validate_settings import *
-import logging
-import modules.log_controller
 import datetime
+import multiprocessing as mp
+from pathlib import Path
+import logging
+from .classes.validate_settings import *  # noqa: F403
+from .modules.log_controller import *
+from .modules.data_sources import NetworkData
+from .classes.FlagNetworkFromProjects import FlagNetworkFromProjects
+from .classes.ThinNetwork import *
+from .classes.hov_system import *
+from .classes.BuildScenarioLinks import *
+from .classes.ConfigureTransitSegments import *
+from .classes.EmmeProject import *
+from .classes.EmmeNetwork import *
+from .classes.BuildZoneInputs import *
+from .classes.TransitHeadways import *
 import networkx as nx
 from networkx.algorithms.components import *
-import collections
-import multiprocessing as mp
-import modules.build_transit_segments_parallel
-import modules.build_bike_network_parallel
-import collections
+from .build_transit_segments_parallel import *
 import inro.emme.database.emmebank as _eb
 import inro.emme.desktop.app as app
 import json
 import shutil
 from shutil import copy2 as shcopy
-import multiprocessing as mp
-import modules.configuration
 
 
 def add_run_args(parser, multiprocess=True):
@@ -45,7 +33,11 @@ def add_run_args(parser, multiprocess=True):
     Run command args
     """
     parser.add_argument(
-        "-c", "--configs_dir", type=str, metavar="PATH", help="path to configs dir"
+        "-c",
+        "--configs_dir",
+        type=str,
+        metavar="PATH",
+        help="path to configs dir",
     )
 
 
@@ -60,7 +52,7 @@ def nodes_from_transit(transit_points):
 
 
 def nodes_from_centroids(junctions, config):
-    centroid_junctions = junctions[junctions.PSRCjunctID <= config['max_zone_number']]
+    centroid_junctions = junctions[junctions.PSRCjunctID <= config.max_zone_number]
     return centroid_junctions.PSRCjunctID.tolist()
 
 
@@ -80,74 +72,86 @@ def nodes_from_edges(list_of_edges, edges):
 def get_potential_thin_nodes(edges):
     node_list = edges.INode.tolist() + edges.JNode.tolist()
     df = pd.DataFrame(pd.Series(node_list).value_counts())
-    df.rename(columns={"count" : "node_count"}, inplace = True)
+    df.rename(columns={"count": "node_count"}, inplace=True)
     df = df[df.node_count == 2]
     return df.index.tolist()
 
 
-def nodes_to_retain(edges, config):
-    junctions = retain_junctions(gdf_Junctions)
-    centroids = nodes_from_centroids(gdf_Junctions, config)
-    turn_nodes = nodes_from_turns(gdf_TurnMovements, edges)
-    transit_nodes = nodes_from_transit(gdf_TransitPoints)
-    edge_nodes = nodes_from_edges(df_tolls["PSRCEdgeID"].tolist(), edges)
+def nodes_to_retain(edges, config, network_data):
+    junctions = retain_junctions(network_data.gdf_Junctions)
+    centroids = nodes_from_centroids(network_data.gdf_Junctions, config)
+    turn_nodes = nodes_from_turns(network_data.gdf_TurnMovements, edges)
+    transit_nodes = nodes_from_transit(network_data.gdf_TransitPoints)
+    edge_nodes = nodes_from_edges(network_data.df_tolls["PSRCEdgeID"].tolist(), edges)
     return turn_nodes + centroids + transit_nodes + junctions + edge_nodes
 
 
-if __name__ == "__main__":
+
+
+def run(args):
+    """
+    Implements the 'run' sub-command, which
+    runs network builder using the specified
+    configs.
+    """
+
     pd.options.display.float_format = "{:.4f}".format
     mp.freeze_support()
+    build_network(args.configs_dir)
+    sys.exit()
 
-    config = yaml.safe_load(
-        open(os.path.join(modules.configuration.args.configs_dir, "config.yaml"))
-    )
+
+def build_network(configs_dir):
+    start_time = datetime.datetime.now()
+    config = yaml.safe_load(open(Path(f"{configs_dir}/config.yaml")))
+
+    # tart_transit_pool(1)
+
+    tables_config = yaml.safe_load(open(Path(f"{configs_dir}/tables_config.yaml")))
 
     config = ValidateSettings(**config)
+    tables_config = ValidateTableSettings(**tables_config)
 
-    logger = modules.log_controller.setup_custom_logger("main_logger")
-    logger.info(
-        "------------------------Network Builder Started----------------------------------------------"
-    )
+    logger = setup_custom_logger("main_logger", config)
+    logger.info("Network Builder Started")
+    logger.info(f"Configs Dir set to {configs_dir}")
 
-    start_time = datetime.datetime.now()
-
-    logger.info("Starting data import")
-    from modules.sql_data_sources import *
-
+    network_data = NetworkData(config, tables_config)
     logger.info("Finished data import")
 
-    model_year = config["model_year"]
-
-    if config["output_crs"]:
-        crs = config["output_crs"]
+    if config.output_crs:
+        crs = config.output_crs
     else:
-        crs = config["input_crs"]
+        crs = config.input_crs
 
-    if config["update_network_from_projects"]:
+    if config.update_network_from_projects:
         logger.info("Start updating network from projects")
         flagged_network = FlagNetworkFromProjects(
-            gdf_TransRefEdges, gdf_ProjectRoutes, gdf_Junctions, config
+            network_data.gdf_TransRefEdges,
+            network_data.gdf_ProjectRoutes,
+            network_data.gdf_Junctions,
+            config,
         )
         scenario_edges = flagged_network.scenario_edges
         logger.info("Finished updating network from projects")
     else:
-        scenario_edges = gdf_TransRefEdges.loc[
+        scenario_edges = network_data.gdf_TransRefEdges.loc[
             (
-                (gdf_TransRefEdges.InServiceDate <= config["model_year"])
-                & (gdf_TransRefEdges.ActiveLink > 0)
-                & (gdf_TransRefEdges.ActiveLink != 999)
+                (network_data.gdf_TransRefEdges.InServiceDate <= config.model_year)
+                & (network_data.gdf_TransRefEdges.ActiveLink > 0)
+                & (network_data.gdf_TransRefEdges.ActiveLink != 999)
             )
         ]
         scenario_edges["projRteID"] = 0
 
     logger.info("Start network thinning")
     start_edge_count = len(scenario_edges)
-    retain_nodes = nodes_to_retain(scenario_edges, config)
+    retain_nodes = nodes_to_retain(scenario_edges, config, network_data)
     potential_thin_nodes = get_potential_thin_nodes(scenario_edges)
     potential_thin_nodes = [x for x in potential_thin_nodes if x not in retain_nodes]
     logger.info(" %s Potential nodes to thin", len(potential_thin_nodes))
     thinned_network = ThinNetwork(
-        scenario_edges, gdf_Junctions, potential_thin_nodes, config
+        scenario_edges, network_data.gdf_Junctions, potential_thin_nodes, logger, config
     )
     scenario_edges = thinned_network.thinned_edges_gdf
     scenario_junctions = thinned_network.thinned_junctions_gdf
@@ -159,9 +163,9 @@ if __name__ == "__main__":
 
     # turns:
     turn_list = []
-    for turn in gdf_TurnMovements.iterrows():
+    for turn in network_data.gdf_TurnMovements.iterrows():
         turn = turn[1]
-        j_node = turn.PSRCJunctID + config["node_offset"]
+        j_node = turn.PSRCJunctID + config.node_offset
         from_edge = scenario_edges[scenario_edges.PSRCEdgeID == turn.FrEdgeID]
         if from_edge.empty:
             logger.warning("Warning: From edge from Turn %s not found!" % (turn.TurnID))
@@ -188,19 +192,19 @@ if __name__ == "__main__":
         )
     turn_df = pd.DataFrame(turn_list)
     turn_df = turn_df.merge(
-        gdf_TurnMovements, how="left", left_on="turn_id", right_on="TurnID"
+        network_data.gdf_TurnMovements, how="left", left_on="turn_id", right_on="TurnID"
     )
 
-    if config["create_emme_network"]:
+    if config.create_emme_network:
         logger.info("creating emme bank")
-        emme_folder = os.path.join(config["output_dir"], config["emme_folder_name"])
+        emme_folder = os.path.join(config.output_dir, config.emme_folder_name)
         emmebank_dimensions_dict = json.load(open("inputs/emme_bank_dimensions.json"))
         if os.path.exists(emme_folder):
             shutil.rmtree(emme_folder)
         os.makedirs(emme_folder)
         bank_path = os.path.join(emme_folder, "emmebank")
         emmebank = _eb.create(bank_path, emmebank_dimensions_dict)
-        emmebank.title = config["emmebank_title"]
+        emmebank.title = config.emmebank_title
         emmebank.unit_of_length = "mi"
         emmebank.coord_unit_length = 0.0001894
         scenario = emmebank.create_scenario(999)
@@ -221,7 +225,7 @@ if __name__ == "__main__":
         os.path.join(emme_folder + "emme_networks")
 
         build_file_folder = os.path.join(
-            config["output_dir"], config["emme_folder_name"], "build_files"
+            config.output_dir, config.emme_folder_name, "build_files"
         )
         if os.path.exists(build_file_folder):
             shutil.rmtree(build_file_folder)
@@ -238,12 +242,12 @@ if __name__ == "__main__":
         scenario_edges["is_hov"] = np.where(scenario_edges["is_hov"] > 0, 1, 0)
         scenario_edges["is_managed"] = 0
 
-        hov_system = BuildHOVSystem(scenario_edges, scenario_junctions, config)
+        hov_system = BuildHOVSystem(scenario_edges, scenario_junctions, logger, config)
 
         bike_network = pd.DataFrame()
 
-        for time_period in config["time_periods"]:
-            dir = os.path.join(config["output_dir"], "shapefiles", time_period)
+        for time_period in config.time_periods:
+            dir = os.path.join(config.output_dir, "shapefiles", time_period)
             try:
                 os.makedirs(dir)
             except OSError as e:
@@ -271,7 +275,9 @@ if __name__ == "__main__":
 
             # test = BuildHOVSystem(scenario_edges, scenario_junctions, time_period, config)
             tod_edges = pd.concat([scenario_edges, pd.DataFrame(hov_weave_edges)])
-            tod_edges = pd.concat([tod_edges, pd.DataFrame(hov_edges)],)
+            tod_edges = pd.concat(
+                [tod_edges, pd.DataFrame(hov_edges)],
+            )
             # need to reset so we dont have duplicate index values
             tod_edges.reset_index(inplace=True)
             tod_edges.crs = crs
@@ -285,15 +291,16 @@ if __name__ == "__main__":
                 tod_junctions,
                 time_period,
                 config,
-                config["reversibles"][time_period][0],
-                config["reversibles"][time_period][1],
+                logger,
+                config.reversibles[time_period][0],
+                config.reversibles[time_period][1],
             )
             model_links = test.full_network
             model_nodes = test.junctions
 
             # Do Transit Stuff here
-            gdf_TransitPoints["NewNodeID"] = (
-                gdf_TransitPoints.PSRCJunctID + config["node_offset"]
+            network_data.gdf_TransitPoints["NewNodeID"] = (
+                network_data.gdf_TransitPoints.PSRCJunctID + config.node_offset
             )
             model_links["weight"] = np.where(
                 model_links["is_managed"] == 1,
@@ -301,8 +308,8 @@ if __name__ == "__main__":
                 model_links.length,
             )
 
-            route_id_list = gdf_TransitLines.loc[
-                gdf_TransitLines["Headway_" + time_period] > 0
+            route_id_list = network_data.gdf_TransitLines.loc[
+                network_data.gdf_TransitLines["Headway_" + time_period] > 0
             ].LineID.tolist()
             print(len(route_id_list))
             if route_id_list:
@@ -310,34 +317,42 @@ if __name__ == "__main__":
 
                 # when tracing, only use edges that support transit
                 transit_edges = model_links.loc[
-                    (model_links.i > config["max_zone_number"])
-                    & (model_links.j > config["max_zone_number"])
+                    (model_links.i > config.max_zone_number)
+                    & (model_links.j > config.max_zone_number)
                 ].copy()
                 transit_edges = transit_edges.loc[transit_edges["modes"] != "wk"]
                 transit_edges = transit_edges.loc[transit_edges["lanes"] > 0]
-
+                logger.info("number of pools is %s", config.number_of_pools)
                 pool = mp.Pool(
-                    config["number_of_pools"],
-                    modules.build_transit_segments_parallel.init_pool,
-                    [transit_edges, gdf_TransitLines, gdf_TransitPoints],
+                    config.number_of_pools,
+                    init_transit_segment_pool,
+                    [
+                        transit_edges,
+                        network_data.gdf_TransitLines,
+                        network_data.gdf_TransitPoints,
+                    ],
                 )
                 results = pool.map(
-                    modules.build_transit_segments_parallel.trace_transit_route,
+                    trace_transit_route,
                     route_id_list,
                 )
 
                 results = [item for sublist in results for item in sublist]
+
                 pool.close()
                 pool.join()
 
                 transit_segments = pd.DataFrame(results)
+                logger.info("transit segments %s", len(transit_segments))
+
                 if len(transit_segments) > 1:
                     test = ConfigureTransitSegments(
                         time_period,
                         transit_segments,
-                        gdf_TransitLines,
+                        network_data.gdf_TransitLines,
                         model_links,
                         config,
+                        logger,
                     )
                     transit_segments = test.configure()
                 else:
@@ -345,16 +360,19 @@ if __name__ == "__main__":
                         "Warning: There are no transit segements to build transit routes!"
                     )
 
-                if config["save_network_files"]:
+                if config.save_network_files:
                     transit_segments.to_csv(
                         os.path.join(dir, time_period + "_transit_segments.csv")
                     )
 
             # Use AM network to create zone, park and ride, and transit stops files
             if time_period == "AM":
-
                 zonal_inputs = BuildZoneInputs(
-                    model_nodes, gdf_ProjectRoutes, df_evtPointProjectOutcomes, config
+                    model_nodes,
+                    network_data.gdf_ProjectRoutes,
+                    network_data.df_evtPointProjectOutcomes,
+                    config,
+                    logger,
                 )
                 zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
                 path = os.path.join(build_file_folder, "TAZIndex.txt")
@@ -384,7 +402,10 @@ if __name__ == "__main__":
                 )
 
                 headways = TransitHeadways(
-                    gdf_TransitLines, df_transit_frequencies, config
+                    network_data.gdf_TransitLines,
+                    network_data.df_transit_frequencies,
+                    config,
+                    logger,
                 )
                 headways_df = headways.build_headways()
                 path = os.path.join(build_file_folder, "headways.csv")
@@ -392,12 +413,12 @@ if __name__ == "__main__":
 
                 # Create transit stops file
                 df = pd.DataFrame()
-                for mode in pd.unique(gdf_TransitLines["Mode"]):
-                    transit_edges_submode = gdf_TransitLines[
-                        gdf_TransitLines["Mode"] == mode
+                for mode in pd.unique(network_data.gdf_TransitLines["Mode"]):
+                    transit_edges_submode = network_data.gdf_TransitLines[
+                        network_data.gdf_TransitLines["Mode"] == mode
                     ]
-                    stops_df = gdf_TransitPoints[
-                        gdf_TransitPoints["LineID"].isin(
+                    stops_df = network_data.gdf_TransitPoints[
+                        network_data.gdf_TransitPoints["LineID"].isin(
                             transit_edges_submode["LineID"].values
                         )
                     ]
@@ -406,11 +427,11 @@ if __name__ == "__main__":
                     stops_df["y"] = stops_df.geometry.y
                     df = pd.concat([df, stops_df[["submode", "x", "y", "PSRCJunctID"]]])
                 # Now BRT
-                transit_edges_submode = gdf_TransitLines[
-                    gdf_TransitLines["TransitType"] == 3
+                transit_edges_submode = network_data.gdf_TransitLines[
+                    network_data.gdf_TransitLines["TransitType"] == 3
                 ]
-                stops_df = gdf_TransitPoints[
-                    gdf_TransitPoints["LineID"].isin(
+                stops_df = network_data.gdf_TransitPoints[
+                    network_data.gdf_TransitPoints["LineID"].isin(
                         transit_edges_submode["LineID"].values
                     )
                 ]
@@ -420,11 +441,11 @@ if __name__ == "__main__":
                 df = pd.concat([df, stops_df[["submode", "x", "y", "PSRCJunctID"]]])
 
                 # Now Street Car
-                transit_edges_submode = gdf_TransitLines[
-                    gdf_TransitLines["TransitType"] == 4
+                transit_edges_submode = network_data.gdf_TransitLines[
+                    network_data.gdf_TransitLines["TransitType"] == 4
                 ]
-                stops_df = gdf_TransitPoints[
-                    gdf_TransitPoints["LineID"].isin(
+                stops_df = network_data.gdf_TransitPoints[
+                    network_data.gdf_TransitPoints["LineID"].isin(
                         transit_edges_submode["LineID"].values
                     )
                 ]
@@ -434,7 +455,7 @@ if __name__ == "__main__":
                 df = pd.concat([df, stops_df[["submode", "x", "y", "PSRCJunctID"]]])
 
                 df = df.groupby(["submode", "PSRCJunctID"]).max().reset_index()
-                for submode, colname in config["submode_dict"].items():
+                for submode, colname in config.submode_dict.items():
                     df.loc[df["submode"] == submode, colname] = 1
                 df.fillna(0, inplace=True)
                 df.drop(columns=["submode"], inplace=True)
@@ -443,19 +464,17 @@ if __name__ == "__main__":
                     os.path.join(build_file_folder, "transit_stops.csv"), index=False
                 )
 
-            if config["build_bike_network"]:  # Only run this once
-
+            if config.build_bike_network:  # Only run this once
                 # Only run this for one time period:
                 if len(bike_network) == 0:
-
                     # Filter bikeable links (remove freeways, ramps, transit-only facilities, centroid connectors)
                     bike_network = model_links[
-                        model_links["FacilityType"].isin(config["bike_facility_types"])
+                        model_links["FacilityType"].isin(config.bike_facility_types)
                     ]
 
                     # Intersect elevation raster with all point features along each link
                     logger.info("Elevation raster start")
-                    pts = point_query(bike_network, config["raster_file_path"])
+                    pts = point_query(bike_network, config.raster_file_path)
                     # pts = np.array(
                     #     point_query(bike_network, config["raster_file_path"])
                     # )
@@ -471,12 +490,13 @@ if __name__ == "__main__":
                     # Slope is calculated in direction of link & only considers increases in slope
                     link_ids = bike_network["id"].tolist()
                     bike_pool = mp.Pool(
-                        config["number_of_pools"],
+                        config.number_of_pools,
                         modules.build_bike_network_parallel.init_pool,
                         [bike_network, elev_dict],
                     )
                     avg_upslope = bike_pool.map(
-                        modules.build_bike_network_parallel.calc_slope_parallel, link_ids
+                        modules.build_bike_network_parallel.calc_slope_parallel,
+                        link_ids,
                     )
 
                     bike_pool.close()
@@ -494,12 +514,12 @@ if __name__ == "__main__":
                 model_links["upslp"] = model_links["upslp"].fillna(0)
             else:
                 model_links["upslp"] = -1
-            
-            model_links.rename(columns={"id" : "link_id"}, inplace = True)
 
-            if config["save_network_files"]:
+            model_links.rename(columns={"id": "link_id"}, inplace=True)
+
+            if config.save_network_files:
                 # using pyogrio driver was causing an error here.
-                # but need to use it earlier to import from file gdb. 
+                # but need to use it earlier to import from file gdb.
                 gpd.options.io_engine = "fiona"
 
                 model_nodes.to_file(
@@ -514,9 +534,8 @@ if __name__ == "__main__":
                     Index=False,
                 )
 
-            if config["create_emme_network"]:
+            if config.create_emme_network:
                 if route_id_list:
-
                     model_nodes["invt"] = 1
                     model_nodes["wait"] = 2
                     model_nodes["hdwfr"] = 0.5
@@ -524,26 +543,28 @@ if __name__ == "__main__":
                     emme_network = EmmeNetwork(
                         my_project,
                         time_period,
-                        gdf_TransitLines,
+                        network_data.gdf_TransitLines,
                         model_links,
                         model_nodes,
                         turn_df,
                         config,
+                        logger,
                         transit_segments,
                     )
                 else:
                     emme_network = EmmeNetwork(
                         my_project,
                         time_period,
-                        gdf_TransitLines,
+                        network_data.gdf_TransitLines,
                         model_links,
                         model_nodes,
                         turn_df,
                         config,
+                        logger,
                     )
                 emme_network.load_network()
 
-            if config["export_build_files"]:
+            if config.export_build_files:
                 my_project.change_primary_scenario(time_period)
 
                 path = os.path.join(
@@ -585,3 +606,12 @@ if __name__ == "__main__":
         "------------------------RUN ENDING_----------------------------------------------"
     )
     logger.info("TOTAL RUN TIME %s" % str(elapsed_total))
+
+    print("Done!")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    add_run_args(parser)
+    args = parser.parse_args()
+    sys.exit(run(args))

@@ -10,7 +10,6 @@ import os
 
 # from EmmeProject import *
 import json
-import modules.log_controller
 
 
 class EmmeNetwork(object):
@@ -23,6 +22,7 @@ class EmmeNetwork(object):
         model_nodes,
         turns,
         config,
+        logger,
         transit_segments=None,
     ):
         model_links.fillna(0, inplace=True)
@@ -38,7 +38,7 @@ class EmmeNetwork(object):
         ]
         self.transit_lines = transit_lines
         self.config = config
-        self._logger = modules.log_controller.logging.getLogger("main_logger")
+        self._logger = logger
 
     def _create_scenario(self, scenario_name, scenario_id):
         scenario = self.emme_project.bank.create_scenario(scenario_id)
@@ -51,17 +51,15 @@ class EmmeNetwork(object):
         # self.emme_project.change_scenario(scenario_id)
 
     def load_network(self):
-        scenario_id = self.config["time_periods"].index(self.time_period) + 1
+        scenario_id = self.config.time_periods.index(self.time_period) + 1
         scenario = self._create_scenario(self.time_period, scenario_id)
-        self.emme_project.process_modes(self.config["modes_file"], scenario)
-        self.emme_project.process_vehicles(
-            self.config["transit_vehicle_file"], scenario
-        )
+        self.emme_project.process_modes(self.config.modes_file, scenario)
+        self.emme_project.process_vehicles(self.config.transit_vehicle_file, scenario)
         # ('inputs/scenario/networks/' + self.config['transit_vehicle_file'] , self.emme_project.bank.scenario(scenario_id))
         self._load_network_elements(scenario)
 
     def _create_extra_attributes(self, scenario):
-        for type, atts in self.config["extra_attributes"].items():
+        for type, atts in self.config.extra_attributes.items():
             for att in atts:
                 att = "@" + att
                 scenario.create_extra_attribute(type, att.lower())
@@ -77,7 +75,7 @@ class EmmeNetwork(object):
                 emme_node = network.create_regular_node(node.i)
             emme_node.x = node.geometry.x
             emme_node.y = node.geometry.y
-            for att in self.config["extra_attributes"]["NODE"]:
+            for att in self.config.extra_attributes["NODE"]:
                 emme_node["@" + att.lower()] = node[att]
 
         for link in self.links.iterrows():
@@ -87,7 +85,7 @@ class EmmeNetwork(object):
                 # print (link.modes)
                 emme_link = network.create_link(link.i, link.j, link.modes.strip())
                 emme_link.type = int(link.type)
-                if self.config["add_channelization"]:
+                if self.config.add_channelization:
                     emme_link.num_lanes = link.lanes + link.Channelization
                 else:
                     emme_link.num_lanes = link.lanes
@@ -97,7 +95,7 @@ class EmmeNetwork(object):
                 emme_link.data2 = round(link.ul2, 2)
                 emme_link.data3 = int(link.ul3)
                 # extra attributes:
-                for att in self.config["extra_attributes"]["LINK"]:
+                for att in self.config.extra_attributes["LINK"]:
                     emme_link["@" + att.lower()] = link[att]
 
                 emme_link.vertices = vertices = list(link.geometry.coords)[1:-1]
@@ -173,7 +171,7 @@ class EmmeNetwork(object):
                 emme_line.headway = line["Headway_" + self.time_period]
                 emme_line.data1 = line.Processing
                 emme_line.data3 = line.Operator
-                for att in self.config["extra_attributes"]["TRANSIT_LINE"]:
+                for att in self.config.extra_attributes["TRANSIT_LINE"]:
                     emme_line["@" + att.lower()] = line[att]
 
             x = 0

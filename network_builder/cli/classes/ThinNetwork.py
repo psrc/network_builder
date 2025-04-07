@@ -1,7 +1,6 @@
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import LineString
-import modules.log_controller
 import networkx as nx
 from networkx.algorithms.components import *
 import copy
@@ -9,12 +8,12 @@ import numpy as np
 
 
 class ThinNetwork(object):
-    def __init__(self, network_gdf, junctions_gdf, thin_nodes_list, config):
+    def __init__(self, network_gdf, junctions_gdf, thin_nodes_list, logger, config):
         self.network_gdf = network_gdf
         self.junctions_gdf = junctions_gdf
         self.thin_nodes_list = thin_nodes_list
         self.config = config
-        self._logger = modules.log_controller.logging.getLogger("main_logger")
+        self._logger = logger
         self.thinned_edges_gdf = self._thin_network()
         self.thinned_junctions_gdf = self._thin_junctions()
 
@@ -24,9 +23,9 @@ class ThinNetwork(object):
         """
 
         compare_cols = (
-            self.config["non_dir_columns"]
-            + self.config["dir_columns"]
-            + self.config["dir_toll_columns"]
+            self.config.non_dir_columns
+            + self.config.dir_columns
+            + self.config.dir_toll_columns
         )
 
         compare_atts1 = {
@@ -47,14 +46,14 @@ class ThinNetwork(object):
             compare_atts2 = {
                 key[1] + key[0] + key[2:]: value
                 for (key, value) in edge2.items()
-                if key in self.config["dir_columns"] + self.config["dir_toll_columns"]
+                if key in self.config.dir_columns + self.config.dir_toll_columns
             }
 
             compare_atts2.update(
                 {
                     key: value
                     for (key, value) in edge2.items()
-                    if key in self.config["non_dir_columns"]
+                    if key in self.config.non_dir_columns
                 }
             )
 
@@ -85,13 +84,13 @@ class ThinNetwork(object):
         if not dup_edges.empty:
             dup_edges_dict = (
                 dup_edges.groupby(["id"]).apply(lambda x: list(x.PSRCEdgeID)).to_dict()
-                )
+            )
 
             for node_seq, edge_ids in dup_edges_dict.items():
                 self._logger.info(
                     "Warning! Node sequence %s is represented "
                     "by more than one edge: %s. Please Fix!" % (node_seq, edge_ids)
-                    )
+                )
 
     def _thin_network(self):
         """
@@ -101,9 +100,9 @@ class ThinNetwork(object):
 
         self._report_duplicate_edges()
         cols = (
-            self.config["intermediate_keep_columns"]
-            + self.config["dir_columns"]
-            + self.config["dir_toll_columns"]
+            self.config.intermediate_keep_columns
+            + self.config.dir_columns
+            + self.config.dir_toll_columns
         )
 
         # need to remove any links that are one-way,
@@ -146,7 +145,6 @@ class ThinNetwork(object):
                     edge_1["INode"] != edge_2["INode"]
                     and edge_1["JNode"] != edge_2["JNode"]
                 ):
-
                     edge_dir = "with"
                     merge = self._compare_attributes(edge_1, edge_2, "IJ")
 
@@ -179,7 +177,7 @@ class ThinNetwork(object):
                                 G.add_edge(
                                     merged_row["INode"],
                                     merged_row["JNode"],
-                                    **merged_row
+                                    **merged_row,
                                 )
 
                         else:
@@ -204,7 +202,7 @@ class ThinNetwork(object):
                                 G.add_edge(
                                     merged_row["INode"],
                                     merged_row["JNode"],
-                                    **merged_row
+                                    **merged_row,
                                 )
 
                     # Are lines digitized towards each other:
@@ -266,7 +264,7 @@ class ThinNetwork(object):
         for x in G.edges.items():
             edge_list.append(x[1])
         gdf = gpd.GeoDataFrame(edge_list)
-        gdf = pd.concat([gdf,one_way_keep[cols]])
+        gdf = pd.concat([gdf, one_way_keep[cols]])
 
         return gdf
 
@@ -288,7 +286,7 @@ class ThinNetwork(object):
         ]
 
         thinned_junctions["ScenarioNodeID"] = (
-            thinned_junctions["PSRCjunctID"] + self.config["node_offset"]
+            thinned_junctions["PSRCjunctID"] + self.config.node_offset
         )
 
         thinned_junctions["ScenarioNodeID"] = np.where(
@@ -311,7 +309,7 @@ class ThinNetwork(object):
 
     def _check_edge_connection_validity(self, node, edges, network_graph):
         """
-        Checks to make sure edges have a 
+        Checks to make sure edges have a
         valid connection.
         """
 

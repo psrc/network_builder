@@ -116,3 +116,34 @@ class ValidateSettings(BaseModel):
                 )
             else:
                 return v
+
+
+class ValidateTableSettings(BaseModel):
+    mode_attributes: Optional[str] = None
+
+    mode_tolls: str
+
+    edges: str
+
+    transit_lines: str
+
+    transit_points: str
+
+    turn_movements: str
+
+    junctions: str
+
+    transit_frequencies: str
+
+    project_routes: str
+
+    projects_in_scenarios: str
+
+    project_attributes: str
+
+    point_events: str
+
+    @validator("mode_attributes")
+    def prevent_none(cls, v):
+        assert v is not None, "size may not be None"
+        return v

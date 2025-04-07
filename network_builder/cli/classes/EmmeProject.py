@@ -59,7 +59,6 @@ class EmmeProject:
     def change_active_database(self, database_name):
         for database in self.data_explorer.databases():
             if database.title() == database_name:
-
                 database.open()
                 self.bank = self.m.emmebank
                 self.tod = self.bank.title
@@ -290,7 +289,6 @@ class EmmeProject:
 
 
 def json_to_dictionary(dict_name):
-
     # Determine the Path to the input files and load them
     input_filename = os.path.join("inputs/skim_params/", dict_name + ".json").replace(
         "\\", "/"
