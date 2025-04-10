@@ -91,7 +91,7 @@ def nodes_to_retain(edges, config, network_data):
 
 def create_emme_bank(file_system, config):
     """Create an Emme bank and scenario."""
-    emmebank_dimensions_dict = json.load(open("inputs/emme_bank_dimensions.json"))
+    emmebank_dimensions_dict = json.load(open(file_system.configs_dir/"emme_bank_dimensions.json"))
     bank_path = Path(file_system.emme_dir/"emmebank")
     emmebank = _eb.create(bank_path, emmebank_dimensions_dict)
     emmebank.title = config.emmebank_title
@@ -133,7 +133,7 @@ def build_network(configs_dir):
     config = ValidateSettings(**config)
     tables_config = ValidateTableSettings(**tables_config)
 
-    file_system = FileSystem(config)
+    file_system = FileSystem(config, configs_dir)
     
 
     # tart_transit_pool(1)
@@ -544,6 +544,7 @@ def build_network(configs_dir):
                         turn_df,
                         config,
                         logger,
+                        file_system,
                         transit_segments,
                     )
                 else:
@@ -556,6 +557,7 @@ def build_network(configs_dir):
                         turn_df,
                         config,
                         logger,
+                        file_system,
                     )
                 emme_network.load_network()
 

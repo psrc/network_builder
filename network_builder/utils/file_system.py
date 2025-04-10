@@ -4,9 +4,10 @@ from pathlib import Path
 class FileSystem():
     """FileSystem class to handle file system operations."""
 
-    def __init__(self, config):
+    def __init__(self, config, configs_dir):
         """Create directories based on the configuration."""
         self.config = config
+        self.configs_dir = Path(configs_dir)
         self.output_dir = self.create_directory(path_parts=[config.output_dir])
         self.emme_dir = self.create_directory(path = self.output_dir/config.emme_folder_name)
         self.log_dir = self.create_directory(path = self.output_dir/"logs")

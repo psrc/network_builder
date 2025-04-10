@@ -67,13 +67,11 @@ hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
 build_bike_network : True
-save_network_files : True  
+save_network_files : False  
 create_emme_network: True
 export_build_files: True
 emme_folder_name: EMME
 emmebank_title : networks
-modes_file: inputs\modes.txt
-transit_vehicle_file: inputs\vehicles.txt
 
 submode_dict : { 'b': 'bus', 
                  'c': 'commuter_rail',

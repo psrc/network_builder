@@ -44,9 +44,6 @@ class ValidateSettings(BaseModel):
     export_build_files: bool
     emme_folder_name: str
     emmebank_title: str
-    modes_file: str
-    transit_vehicle_file: str
-
     submode_dict: dict
 
     # Bike Network
