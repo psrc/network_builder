@@ -14,13 +14,10 @@ def calc_slope_parallel(link_id):
     # slope points
     _elev_pts = global_elev_dict[link_id]
 
-    config = yaml.safe_load(
-        open(os.path.join(modules.configuration.args.configs_dir, "config.yaml"))
-    )
-    if config["output_crs"]:
-        crs = config["output_crs"]
+    if global_config.output_crs:
+        crs = global_config.output_crs
     else:
-        crs = config["input_crs"]
+        crs = global_config.input_crs
 
     # Generate two geodataframes; one for an initial point, the other for the subsequent point
     # Each row of the dataframes represents a unique pair of points (a segment) in order across the linestring
@@ -48,7 +45,7 @@ def calc_slope_parallel(link_id):
         ]
 
         # Convert elevation from meters to feet
-        tot_elev_change = [config["elev_conversion"] * i for i in tot_elev_change]
+        tot_elev_change = [global_config.elev_conversion * i for i in tot_elev_change]
 
         # these results are joined to the coordinate info
         xy_dist["tot_elev_change"] = tot_elev_change

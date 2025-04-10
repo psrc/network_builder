@@ -8,6 +8,9 @@ import os
 
 
 class FlagNetworkFromProjects(object):
+    """
+    Class to flag network edges that are updated by projects.
+    """
     def __init__(self, network_gdf, projects_gdf, junctions_gdf, config, logger):
         # self.network_gdf = network_gdf[network_gdf['OutServiceDate']>=config['model_year']]
         self.network_gdf = network_gdf

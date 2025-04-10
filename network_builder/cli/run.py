@@ -15,55 +15,21 @@ import shutil
 from rasterstats import zonal_stats, point_query
 from shutil import copy2 as shcopy
 import os
-from network_builder.modules.emme_utilities import EmmeProject
-from network_builder.modules.emme_utilities import EmmeNetwork
-from network_builder.modules.validate_settings import ValidateSettings
-from network_builder.modules.validate_settings import ValidateTableSettings
-from network_builder.modules.FlagNetworkFromProjects import FlagNetworkFromProjects
-from network_builder.modules.ThinNetwork import ThinNetwork
-from network_builder.modules.hov_system import BuildHOVSystem
-from network_builder.modules.BuildScenarioLinks import BuildScenarioLinks
-from network_builder.modules.ConfigureTransitSegments import ConfigureTransitSegments
-from network_builder.modules.file_system import FileSystem
-from network_builder.modules.BuildZoneInputs import BuildZoneInputs
-from network_builder.modules.TransitHeadways import TransitHeadways
-from network_builder.modules.log_controller import *
-from network_builder.modules.data_sources import NetworkData
-from network_builder.modules.build_transit_segments_parallel import *
-#try:
-    # from ..modules.validate_settings import ValidateSettings
-    # from ..modules.validate_settings import ValidateTableSettings
-    #from .modules.log_controller import *
-    #from .modules.data_sources import NetworkData
-    #from ..modules.FlagNetworkFromProjects import FlagNetworkFromProjects
-    #from .classes.ThinNetwork import ThinNetwork
-    #from .classes.hov_system import BuildHOVSystem
-    #from .classes.BuildScenarioLinks import BuildScenarioLinks
-    #from .classes.ConfigureTransitSegments import ConfigureTransitSegments
-    #from ..emme.emme_utilities import EmmeProject
-    #from ..emme.emme_utilities import EmmeNetwork
-    #from .classes.emme_utilities import create_bank
-    #from .classes.BuildZoneInputs import BuildZoneInputs
-    #from .classes.TransitHeadways import TransitHeadways
-    #from .classes.file_system import FileSystem
-    #from .build_transit_segments_parallel import *
-
-#except ImportError:
-    # from network_builder.modules.validate_settings import ValidateSettings
-    # from network_builder.modules.validate_settings import ValidateTableSettings
-    #from modules.log_controller import *
-    #from modules.data_sources import NetworkData
-    # from network_builder.modules.FlagNetworkFromProjects import FlagNetworkFromProjects
-    # from classes.ThinNetwork import ThinNetwork
-    # from classes.hov_system import BuildHOVSystem
-    # from classes.BuildScenarioLinks import BuildScenarioLinks
-    # from classes.ConfigureTransitSegments import ConfigureTransitSegments
-    # #from network_builder.emme.emme_utilities import EmmeProject
-    # #from network_builder.emme.emme_utilities import EmmeNetwork
-    # from classes.BuildZoneInputs import BuildZoneInputs
-    # from classes.TransitHeadways import TransitHeadways
-    # from classes.file_system import FileSystem
-    #from build_transit_segments_parallel import *
+from network_builder.core.emme_utilities import EmmeProject
+from network_builder.core.emme_utilities import EmmeNetwork
+from network_builder.utils.validate_settings import ValidateSettings
+from network_builder.utils.validate_settings import ValidateTableSettings
+from network_builder.core.projects import FlagNetworkFromProjects
+from network_builder.core.thin_network import ThinNetwork
+from network_builder.core.hov_system import BuildHOVSystem
+from network_builder.core.scenario_links import BuildScenarioLinks
+from network_builder.core.transit_segments import ConfigureTransitSegments
+from network_builder.utils.file_system import FileSystem
+from network_builder.core.zone_inputs import BuildZoneInputs
+from network_builder.core.transit_headways import TransitHeadways
+from network_builder.utils.log_controller import *
+from network_builder.utils.data_sources import NetworkData
+from network_builder.core.transit_segments_parallel import *
 
 
 def add_run_args(parser, multiprocess=True):

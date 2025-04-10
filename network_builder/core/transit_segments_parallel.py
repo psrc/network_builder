@@ -2,7 +2,7 @@ import geopandas as gpd
 import pandas as pd
 import multiprocessing as mp
 import networkx as nx
-from network_builder.modules.log_controller import *
+from network_builder.utils.log_controller import *
 # try:
 #     from .modules.log_controller import *
 # except ImportError:
