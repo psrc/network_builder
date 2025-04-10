@@ -1,31 +1,69 @@
+import pyogrio
 import sys
 import argparse
 import pandas as pd
+import numpy as np
 import yaml
 import datetime
 import multiprocessing as mp
 from pathlib import Path
-import logging
-from .classes.validate_settings import *  # noqa: F403
-from .modules.log_controller import *
-from .modules.data_sources import NetworkData
-from .classes.FlagNetworkFromProjects import FlagNetworkFromProjects
-from .classes.ThinNetwork import *
-from .classes.hov_system import *
-from .classes.BuildScenarioLinks import *
-from .classes.ConfigureTransitSegments import *
-from .classes.EmmeProject import *
-from .classes.EmmeNetwork import *
-from .classes.BuildZoneInputs import *
-from .classes.TransitHeadways import *
-import networkx as nx
 from networkx.algorithms.components import *
-from .build_transit_segments_parallel import *
 import inro.emme.database.emmebank as _eb
 import inro.emme.desktop.app as app
 import json
 import shutil
+from rasterstats import zonal_stats, point_query
 from shutil import copy2 as shcopy
+import os
+from network_builder.modules.emme_utilities import EmmeProject
+from network_builder.modules.emme_utilities import EmmeNetwork
+from network_builder.modules.validate_settings import ValidateSettings
+from network_builder.modules.validate_settings import ValidateTableSettings
+from network_builder.modules.FlagNetworkFromProjects import FlagNetworkFromProjects
+from network_builder.modules.ThinNetwork import ThinNetwork
+from network_builder.modules.hov_system import BuildHOVSystem
+from network_builder.modules.BuildScenarioLinks import BuildScenarioLinks
+from network_builder.modules.ConfigureTransitSegments import ConfigureTransitSegments
+from network_builder.modules.file_system import FileSystem
+from network_builder.modules.BuildZoneInputs import BuildZoneInputs
+from network_builder.modules.TransitHeadways import TransitHeadways
+from network_builder.modules.log_controller import *
+from network_builder.modules.data_sources import NetworkData
+from network_builder.modules.build_transit_segments_parallel import *
+#try:
+    # from ..modules.validate_settings import ValidateSettings
+    # from ..modules.validate_settings import ValidateTableSettings
+    #from .modules.log_controller import *
+    #from .modules.data_sources import NetworkData
+    #from ..modules.FlagNetworkFromProjects import FlagNetworkFromProjects
+    #from .classes.ThinNetwork import ThinNetwork
+    #from .classes.hov_system import BuildHOVSystem
+    #from .classes.BuildScenarioLinks import BuildScenarioLinks
+    #from .classes.ConfigureTransitSegments import ConfigureTransitSegments
+    #from ..emme.emme_utilities import EmmeProject
+    #from ..emme.emme_utilities import EmmeNetwork
+    #from .classes.emme_utilities import create_bank
+    #from .classes.BuildZoneInputs import BuildZoneInputs
+    #from .classes.TransitHeadways import TransitHeadways
+    #from .classes.file_system import FileSystem
+    #from .build_transit_segments_parallel import *
+
+#except ImportError:
+    # from network_builder.modules.validate_settings import ValidateSettings
+    # from network_builder.modules.validate_settings import ValidateTableSettings
+    #from modules.log_controller import *
+    #from modules.data_sources import NetworkData
+    # from network_builder.modules.FlagNetworkFromProjects import FlagNetworkFromProjects
+    # from classes.ThinNetwork import ThinNetwork
+    # from classes.hov_system import BuildHOVSystem
+    # from classes.BuildScenarioLinks import BuildScenarioLinks
+    # from classes.ConfigureTransitSegments import ConfigureTransitSegments
+    # #from network_builder.emme.emme_utilities import EmmeProject
+    # #from network_builder.emme.emme_utilities import EmmeNetwork
+    # from classes.BuildZoneInputs import BuildZoneInputs
+    # from classes.TransitHeadways import TransitHeadways
+    # from classes.file_system import FileSystem
+    #from build_transit_segments_parallel import *
 
 
 def add_run_args(parser, multiprocess=True):
@@ -85,6 +123,26 @@ def nodes_to_retain(edges, config, network_data):
     edge_nodes = nodes_from_edges(network_data.df_tolls["PSRCEdgeID"].tolist(), edges)
     return turn_nodes + centroids + transit_nodes + junctions + edge_nodes
 
+def create_emme_bank(file_system, config):
+    """Create an Emme bank and scenario."""
+    emmebank_dimensions_dict = json.load(open("inputs/emme_bank_dimensions.json"))
+    bank_path = Path(file_system.emme_dir/"emmebank")
+    emmebank = _eb.create(bank_path, emmebank_dimensions_dict)
+    emmebank.title = config.emmebank_title
+    emmebank.unit_of_length = "mi"
+    emmebank.coord_unit_length = 0.0001894
+    scenario = emmebank.create_scenario(999)
+    # project
+    project = app.create_project(file_system.emme_dir, "emme_networks")
+    desktop = app.start_dedicated(False, "SEC", project)
+    data_explorer = desktop.data_explorer()
+    database = data_explorer.add_database(bank_path)
+    # open the database added so that there is an active one
+    database.open()
+    desktop.project.save()
+    desktop.close()
+    emme_toolbox_path = Path(f"{os.environ['EMMEPATH']}/toolboxes")
+    shcopy(emme_toolbox_path/"standard.mtbx", file_system.emme_dir/"emme_networks")
 
 
 
@@ -102,17 +160,20 @@ def run(args):
 
 
 def build_network(configs_dir):
+
     start_time = datetime.datetime.now()
     config = yaml.safe_load(open(Path(f"{configs_dir}/config.yaml")))
-
-    # tart_transit_pool(1)
-
     tables_config = yaml.safe_load(open(Path(f"{configs_dir}/tables_config.yaml")))
-
     config = ValidateSettings(**config)
     tables_config = ValidateTableSettings(**tables_config)
 
-    logger = setup_custom_logger("main_logger", config)
+    file_system = FileSystem(config)
+    
+
+    # tart_transit_pool(1)
+
+    
+    logger = setup_custom_logger("main_logger", file_system, config)
     logger.info("Network Builder Started")
     logger.info(f"Configs Dir set to {configs_dir}")
 
@@ -131,6 +192,7 @@ def build_network(configs_dir):
             network_data.gdf_ProjectRoutes,
             network_data.gdf_Junctions,
             config,
+            logger
         )
         scenario_edges = flagged_network.scenario_edges
         logger.info("Finished updating network from projects")
@@ -197,45 +259,14 @@ def build_network(configs_dir):
 
     if config.create_emme_network:
         logger.info("creating emme bank")
-        emme_folder = os.path.join(config.output_dir, config.emme_folder_name)
-        emmebank_dimensions_dict = json.load(open("inputs/emme_bank_dimensions.json"))
-        if os.path.exists(emme_folder):
-            shutil.rmtree(emme_folder)
-        os.makedirs(emme_folder)
-        bank_path = os.path.join(emme_folder, "emmebank")
-        emmebank = _eb.create(bank_path, emmebank_dimensions_dict)
-        emmebank.title = config.emmebank_title
-        emmebank.unit_of_length = "mi"
-        emmebank.coord_unit_length = 0.0001894
-        scenario = emmebank.create_scenario(999)
-        # project
-        project = app.create_project(emme_folder, "emme_networks")
-        desktop = app.start_dedicated(False, "SEC", project)
-        data_explorer = desktop.data_explorer()
-        database = data_explorer.add_database(bank_path)
-        # open the database added so that there is an active one
-        database.open()
-        desktop.project.save()
-        desktop.close()
-        emme_toolbox_path = os.path.join(os.environ["EMMEPATH"], "toolboxes")
-        shcopy(emme_toolbox_path + "/standard.mtbx", emme_folder + "\\emme_networks")
+        create_emme_bank(file_system, config)
+
         my_project = EmmeProject(
-            emme_folder + "\\emme_networks" + "\\emme_networks.emp"
+            file_system.emme_dir/"emme_networks/emme_networks.emp"
         )
-        os.path.join(emme_folder + "emme_networks")
+        os.path.join(file_system.emme_dir/"emme_networks")
 
-        build_file_folder = os.path.join(
-            config.output_dir, config.emme_folder_name, "build_files"
-        )
-        if os.path.exists(build_file_folder):
-            shutil.rmtree(build_file_folder)
-        os.makedirs(build_file_folder)
-        os.makedirs(os.path.join(build_file_folder, "roadway"))
-        os.makedirs(os.path.join(build_file_folder, "transit"))
-        os.makedirs(os.path.join(build_file_folder, "turns"))
-        os.makedirs(os.path.join(build_file_folder, "shape"))
-        os.makedirs(os.path.join(build_file_folder, "extra_attributes"))
-
+        
         # flag links that are HOV
         hov_columns = [col for col in scenario_edges.columns if "LanesHOV" in col]
         scenario_edges["is_hov"] = scenario_edges[hov_columns].sum(axis=1)
@@ -247,12 +278,9 @@ def build_network(configs_dir):
         bike_network = pd.DataFrame()
 
         for time_period in config.time_periods:
-            dir = os.path.join(config.output_dir, "shapefiles", time_period)
-            try:
-                os.makedirs(dir)
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
+            dir = file_system.shapefile_dir/f"{time_period}"
+            file_system.create_directory([dir])
+        
             # get hov edges & junctions that are in this time period
             ij_field_name = "IJLanesHOV" + time_period
             ji_field_name = "JILanesHOV" + time_period
@@ -338,6 +366,10 @@ def build_network(configs_dir):
                 )
 
                 results = [item for sublist in results for item in sublist]
+                #errors = [item for sublist in errors for item in sublist]
+                # for error in errors:
+                #     logger.warning(error)
+                # logger.info("Finished tracing transit routes")
 
                 pool.close()
                 pool.join()
@@ -375,13 +407,13 @@ def build_network(configs_dir):
                     logger,
                 )
                 zonal_inputs_tuple = zonal_inputs.build_zone_inputs()
-                path = os.path.join(build_file_folder, "TAZIndex.txt")
+                path = file_system.build_file_dir/"TAZIndex.txt"
                 _df = zonal_inputs_tuple[0]
                 _df.fillna(0, inplace=True)
                 tazindex_cols = ["Zone_id", "zone_ordinal", "Dest_eligible", "External"]
                 _df[tazindex_cols] = _df[tazindex_cols].astype("int32").astype("str")
                 _df.to_csv(path, columns=tazindex_cols, index=False, sep="\t")
-                path = os.path.join(build_file_folder, "p_r_nodes.csv")
+                path = file_system.build_file_dir/"p_r_nodes.csv"
                 _df = zonal_inputs_tuple[1]
                 _df[["NodeID", "ZoneID", "Capacity", "Cost"]] = (
                     _df[["NodeID", "ZoneID", "Capacity", "Cost"]]
@@ -408,7 +440,7 @@ def build_network(configs_dir):
                     logger,
                 )
                 headways_df = headways.build_headways()
-                path = os.path.join(build_file_folder, "headways.csv")
+                path =  file_system.build_file_dir/ "headways.csv"
                 headways_df.to_csv(path)
 
                 # Create transit stops file
@@ -460,8 +492,7 @@ def build_network(configs_dir):
                 df.fillna(0, inplace=True)
                 df.drop(columns=["submode"], inplace=True)
                 # df = df.groupby('PSRCJunctID').max().reset_index()
-                df.to_csv(
-                    os.path.join(build_file_folder, "transit_stops.csv"), index=False
+                df.to_csv(file_system.build_file_dir/"transit_stops.csv", index=False
                 )
 
             if config.build_bike_network:  # Only run this once
@@ -492,7 +523,7 @@ def build_network(configs_dir):
                     bike_pool = mp.Pool(
                         config.number_of_pools,
                         modules.build_bike_network_parallel.init_pool,
-                        [bike_network, elev_dict],
+                        [bike_network, elev_dict, config],
                     )
                     avg_upslope = bike_pool.map(
                         modules.build_bike_network_parallel.calc_slope_parallel,
@@ -522,17 +553,15 @@ def build_network(configs_dir):
                 # but need to use it earlier to import from file gdb.
                 gpd.options.io_engine = "fiona"
 
-                model_nodes.to_file(
-                    os.path.join(dir, time_period + "_junctions.shp"),
+                model_nodes.to_file(file_system.shapefile_dir/f"{time_period}_junctions.shp",
                     driver="ESRI Shapefile",
                 )
 
                 model_links.reset_index(drop=True, inplace=True)
-                model_links.to_file(
-                    os.path.join(dir, time_period + "_edges.shp"),
+                model_links.to_file(file_system.shapefile_dir/f"{time_period}_edges.shp",
                     driver="ESRI Shapefile",
-                    Index=False,
                 )
+                
 
             if config.create_emme_network:
                 if route_id_list:
@@ -567,37 +596,25 @@ def build_network(configs_dir):
             if config.export_build_files:
                 my_project.change_primary_scenario(time_period)
 
-                path = os.path.join(
-                    build_file_folder, "roadway", time_period.lower() + "_roadway.in"
-                )
+                path = file_system.roadway_dir/f"{time_period.lower()}_roadway.in"
+                
                 my_project.export_base_network(path)
 
                 if route_id_list:
-                    path = os.path.join(
-                        build_file_folder,
-                        "transit",
-                        time_period.lower() + "_transit.in",
-                    )
+                    path = file_system.transit_dir/f"{time_period.lower()}_transit.in"
                     my_project.export_transit(path)
 
-                path = os.path.join(
-                    build_file_folder, "turns", time_period.lower() + "_turns.in"
-                )
+                path = file_system.turns_dir/f"{time_period.lower()}_turns.in"              
                 my_project.export_turns(path)
+                
+                path = file_system.extra_attributes_dir/f"{time_period.lower()}_link_attributes.in"
 
-                path = os.path.join(
-                    build_file_folder,
-                    "extra_attributes",
-                    time_period.lower() + "_link_attributes.in",
-                )
                 my_project.export_extra_attributes(["LINK"], path)
                 my_project.export_extra_attributes(["NODE"], path)
                 if route_id_list:
                     my_project.export_extra_attributes(["TRANSIT_LINE"], path)
 
-                path = os.path.join(
-                    build_file_folder, "shape", time_period.lower() + "_shape.in"
-                )
+                path = file_system.shape_dir/f"{time_period.lower()}_shape.in"
                 my_project.export_shape(path)
 
     end_time = datetime.datetime.now()

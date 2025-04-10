@@ -8,7 +8,7 @@ import os
 
 
 class FlagNetworkFromProjects(object):
-    def __init__(self, network_gdf, projects_gdf, junctions_gdf, logger, config):
+    def __init__(self, network_gdf, projects_gdf, junctions_gdf, config, logger):
         # self.network_gdf = network_gdf[network_gdf['OutServiceDate']>=config['model_year']]
         self.network_gdf = network_gdf
         self.project_gdf = projects_gdf
@@ -33,7 +33,7 @@ class FlagNetworkFromProjects(object):
 
         buff_projects = self.project_gdf.copy()
         buff_projects["geometry"] = self.project_gdf.geometry.buffer(
-            self.config["project_buffer_dist"]
+            self.config.project_buffer_dist
         )
 
         edges = gpd.sjoin(
@@ -46,17 +46,18 @@ class FlagNetworkFromProjects(object):
 
         # Warn users
         dup_edges = edges.loc[edges.freq > 1]
-        dup_edges_dict = (
-            dup_edges.groupby(["PSRCEdgeID"])
-            .apply(lambda x: list(x.projRteID))
-            .to_dict()
-        )
-
-        for edge_id, proj_ids in dup_edges_dict.items():
-            self._logger.info(
-                "Warning! Edge %s is covered by more than one project: %s."
-                % (edge_id, proj_ids)
+        if not dup_edges.empty:
+            dup_edges_dict = (
+                dup_edges.groupby(["PSRCEdgeID"])
+                .apply(lambda x: list(x.projRteID))
+                .to_dict()
             )
+
+            for edge_id, proj_ids in dup_edges_dict.items():
+                self._logger.info(
+                    "Warning! Edge %s is covered by more than one project: %s."
+                    % (edge_id, proj_ids)
+                )
 
         # edges = gpd.GeoDataFrame(edges.groupby('PSRCEdgeID').first())
         # edges.reset_index(inplace=True)
@@ -136,7 +137,14 @@ class FlagNetworkFromProjects(object):
 
         edge_list = []
         for edge in self.network_gdf.itertuples():
-            if edge.geometry.type == "MultiLineString":
+            if edge.geometry is None:
+                self._logger.warning(
+                    "WARNING: edge "
+                    + str(edge.PSRCEdgeID)
+                    + " does not have a geometry. Please fix."
+                )
+                sys.exit(1)
+            if edge.geometry.geom_type == "MultiLineString":
                 self._logger.warning(
                     "WARNING: edge "
                     + str(edge.PSRCEdgeID)
@@ -330,7 +338,7 @@ class FlagNetworkFromProjects(object):
         edge_count_df["difference"] = (
             edge_count_df["initial_edge_count"] - edge_count_df["final_edge_count"]
         )
-        dir = os.path.join(self.config["output_dir"], "logs")
+        dir = os.path.join(self.config.output_dir, "logs")
         edge_count_df.to_csv(os.path.join(dir, "project_edge_trace.csv"), index=False)
         return pd.DataFrame(proj_edge_list)
 
@@ -350,7 +358,7 @@ class FlagNetworkFromProjects(object):
 
         scenario_edges = self.network_gdf[
             (
-                (self.network_gdf.InServiceDate <= self.config["model_year"])
+                (self.network_gdf.InServiceDate <= self.config.model_year)
                 & (self.network_gdf.ActiveLink > 0)
                 & (self.network_gdf.ActiveLink != 999)
             )
@@ -361,8 +369,8 @@ class FlagNetworkFromProjects(object):
         ij_proj_edges = project_edges[project_edges.dir == "IJ"].copy()
         ji_proj_edges = project_edges[project_edges.dir == "JI"].copy()
 
-        switch_columns = [x[1] + x[0] + x[2:] for x in self.config["dir_columns"]]
-        rename_dict = dict(zip(self.config["dir_columns"], switch_columns))
+        switch_columns = [x[1] + x[0] + x[2:] for x in self.config.dir_columns]
+        rename_dict = dict(zip(self.config.dir_columns, switch_columns))
 
         # Switch IJ & JI attributes for edges that are
         # digitized in the opposite direction of the project
@@ -376,7 +384,7 @@ class FlagNetworkFromProjects(object):
         merged_projects.set_index("PSRCEdgeID", inplace=True)
 
         merged_projects = merged_projects[
-            self.config["project_columns"] + self.config["dir_columns"]
+            self.config.project_columns + self.config.dir_columns
         ]
         scenario_edges.set_index("PSRCEdgeID", inplace=True)
 
@@ -399,7 +407,7 @@ class FlagNetworkFromProjects(object):
                 row_dict = {"PSRCEdgeID": edge_id}
                 edges = multiple_projects[multiple_projects["PSRCEdgeID"] == edge_id]
                 for col in (
-                    self.config["dir_columns"] + self.config["project_update_columns"]
+                    self.config.dir_columns + self.config.project_update_columns
                 ):
                     # If all values are -1
                     if max(edges[col].values) == -1:

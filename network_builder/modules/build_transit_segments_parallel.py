@@ -2,14 +2,14 @@ import geopandas as gpd
 import pandas as pd
 import multiprocessing as mp
 import networkx as nx
-# import modules.log_controller
-
+from network_builder.modules.log_controller import *
+# try:
+#     from .modules.log_controller import *
+# except ImportError:
+#     from modules.log_controller import *
 
 def trace_transit_route(route_id):
-    # global global_edges
-    # global global_transit_lines
-    # global global_transit_points
-
+    
     row_list = []
     line = global_transit_lines[global_transit_lines.LineID == route_id]
     points = global_transit_points[global_transit_points.LineID == route_id]
@@ -41,12 +41,9 @@ def trace_transit_route(route_id):
             points_list.pop(0)
             stop_number = stop_number + 1
         except Exception:
-            # edges.to_file('d:/edges' + str(route_id) + '.shp')
-            logger = modules.log_controller.logging.getLogger('main_logger')
+            logger = logging.getLogger('main_logger')
             logger.info('No path between ' + str(points_list[0]) + 'and '+ str(points_list[1]) + ' in ' +  str(route_id))
 
-            # global_logger.info('No path between ' + str(points_list[0]) + 'and '+ str(points_list[1]) + ' in ' +  str(route_id))
-            # global_logger.info("No path between %s and %s in route %s !" & (str(points_list[0]), str(points_list[1]), str(route_id)))
             row_list.append(
                 {
                     "route_id": route_id,
@@ -56,14 +53,7 @@ def trace_transit_route(route_id):
                     "stop_number": 9999,
                 }
             )
-            print(
-                "No path between "
-                + str(points_list[0])
-                + "and "
-                + str(points_list[1])
-                + " in "
-                + str(route_id)
-            )
+            
             break
 
     return row_list
@@ -76,5 +66,3 @@ def init_transit_segment_pool(edges, transit_lines, transit_points):
     global_transit_lines = transit_lines
     global global_transit_points
     global_transit_points = transit_points
-    # global global_logger
-    # global_logger = logger

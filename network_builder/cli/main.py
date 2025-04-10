@@ -1,7 +1,7 @@
 import sys
 from network_builder.cli import CLI
 from network_builder.cli import run
-from network_builder.cli import build_transit_segments_parallel
+#from network_builder.cli import build_transit_segments_parallel
 
 from network_builder import __version__, __doc__
 
@@ -16,3 +16,6 @@ def main():
     )
 
     sys.exit(build_network.execute())
+
+if __name__ == "__main__":
+    main()

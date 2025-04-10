@@ -6,6 +6,9 @@ from shapely.geometry import Point
 
 
 class BuildZoneInputs(object):
+    """
+    Build the zone inputs for the network. This includes the zone nodes and park and ride nodes.
+    """
     def __init__(
         self, scenario_junctions, projects_gdf, point_events_df, config, logger
     ):

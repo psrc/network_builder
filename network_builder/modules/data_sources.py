@@ -99,9 +99,11 @@ def read_from_sde(
     return gdf
 
 
-def open_from_file_gdb(config, layer_name):
+def open_from_file_gdb(config, layer_name, is_table=False):
+    
     gdf = gpd.read_file(config.file_gdb_path, layer=layer_name)
-    gdf = gdf.explode()
+    if not is_table:
+        gdf = gdf.explode()
     if config.output_crs:
         gdf = gdf.to_crs(config.output_crs)
     return gdf
@@ -133,7 +135,7 @@ class NetworkData:
         if self.config.data_source_type == "enterprise_gdb":
             return read_from_sde(self.config, layer_name, is_table=is_table)
         else:
-            return open_from_file_gdb(self.config, layer_name)
+            return open_from_file_gdb(self.config, layer_name, is_table)
 
     def get_tolls(self):
         df = self.get_data(self.tables_config.mode_tolls, True)
@@ -181,7 +183,7 @@ class NetworkData:
             self.tables_config.projects_in_scenarios, True
         )
         df_tblProjectsInScenarios = df_tblProjectsInScenarios[
-            df_tblProjectsInScenarios["ScenarioName"] == self.config["scenario_name"]
+            df_tblProjectsInScenarios["ScenarioName"] == self.config.scenario_name
         ]
         gdf_ProjectRoutes = gdf_ProjectRoutes[
             gdf_ProjectRoutes["intProjID"].isin(df_tblProjectsInScenarios["intProjID"])
@@ -196,7 +198,7 @@ class NetworkData:
             df_tblLineProjects, how="left", on="projRteID"
         )
         return gdf_ProjectRoutes.loc[
-            gdf_ProjectRoutes["InServiceDate"] <= self.config["model_year"]
+            gdf_ProjectRoutes["InServiceDate"] <= self.config.model_year
         ]
 
 
