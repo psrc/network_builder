@@ -488,11 +488,11 @@ def build_network(configs_dir):
                     link_ids = bike_network["id"].tolist()
                     bike_pool = mp.Pool(
                         config.number_of_pools,
-                        modules.build_bike_network_parallel.init_pool,
+                        core.build_bike_network_parallel.init_pool,
                         [bike_network, elev_dict, config],
                     )
                     avg_upslope = bike_pool.map(
-                        modules.build_bike_network_parallel.calc_slope_parallel,
+                        core.build_bike_network_parallel.calc_slope_parallel,
                         link_ids,
                     )
 
