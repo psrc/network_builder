@@ -30,6 +30,7 @@ from network_builder.core.transit_headways import TransitHeadways
 from network_builder.utils.log_controller import *
 from network_builder.utils.data_sources import NetworkData
 from network_builder.core.transit_segments_parallel import *
+from network_builder.core.bike_network_parallel import *
 
 
 def add_run_args(parser, multiprocess=True):
@@ -488,11 +489,11 @@ def build_network(configs_dir):
                     link_ids = bike_network["id"].tolist()
                     bike_pool = mp.Pool(
                         config.number_of_pools,
-                        core.build_bike_network_parallel.init_pool,
+                        init_pool,
                         [bike_network, elev_dict, config],
                     )
                     avg_upslope = bike_pool.map(
-                        core.build_bike_network_parallel.calc_slope_parallel,
+                        calc_slope_parallel,
                         link_ids,
                     )
 
