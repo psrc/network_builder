@@ -520,12 +520,12 @@ def build_network(configs_dir):
                 # but need to use it earlier to import from file gdb.
                 gpd.options.io_engine = "fiona"
 
-                model_nodes.to_file(file_system.shapefile_dir/f"{time_period}_junctions.shp",
+                model_nodes.to_file(file_system.shapefile_dir/time_period/f"{time_period}_junctions.shp",
                     driver="ESRI Shapefile",
                 )
 
                 model_links.reset_index(drop=True, inplace=True)
-                model_links.to_file(file_system.shapefile_dir/f"{time_period}_edges.shp",
+                model_links.to_file(file_system.shapefile_dir/time_period/f"{time_period}_edges.shp",
                     driver="ESRI Shapefile",
                 )
                 
