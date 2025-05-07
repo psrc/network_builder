@@ -1,0 +1,25 @@
+mode_attributes: modeAttributes_evw
+
+mode_tolls: modeTolls_evw
+
+edges: TransRefEdges_evw
+
+transit_lines: TransitLines_evw
+
+transit_points: TransitPoints_evw
+
+turn_movements: TurnMovements_evw
+
+junctions: TransRefJunctions_evw
+
+transit_frequencies: transitFrequency_evw
+
+project_routes: ProjectRoutes_evw
+
+projects_in_scenarios: tblProjectsInScenarios_evw
+
+project_attributes: tblLineProjects_evw
+
+point_events: evtPointProjectOutcomes_evw
+
+zones: taz2010
