@@ -140,6 +140,8 @@ class ValidateTableSettings(BaseModel):
 
     point_events: str
 
+    zones: str
+
     @validator("mode_attributes")
     def prevent_none(cls, v):
         assert v is not None, "size may not be None"

@@ -114,6 +114,7 @@ class NetworkData:
         self.config = config
         self.tables_config = tables_config
         # data:
+        self.gdf_zones = self.get_data(self.tables_config.zones, False)
         self.df_tolls = self.get_tolls()
         self.gdf_TransitLines = self.get_transit_lines()
         self.gdf_TransitPoints = self.get_transit_points()

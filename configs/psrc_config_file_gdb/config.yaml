@@ -9,23 +9,23 @@ use_sqlalchemy: False
 server: AWS-Prod-SQL\Sockeye
 
 database: OSMTest
-
+sde_schema: 'sde'
 version: "'DBO.Nick'"
 #version: "'sde.DEFAULT'"
 
 
 # The following should be filled out if using a 'file_gdb' as data_source
 
-file_gdb_path: T:/2023December/Kris/Nagendra/New File Geodatabase.gdb
+file_gdb_path: T:/60day-TEMP/Stefan/soundcast_03282025.gdb
 
 
 # Standard user params:
 
-output_dir: E:/networks/ST/st_2040_with_2030_transit
+output_dir: C:/Stefan/networks/file_gdb_2023
 
 number_of_pools: 12
 
-model_year: 2040
+model_year: 2023
 input_crs: 2285
 
 output_crs: null
@@ -44,7 +44,7 @@ add_channelization: False
 
 
 # Project/Future network params
-update_network_from_projects : True
+update_network_from_projects : False
 
 scenario_name: constrained_2050 #as defined in the tblProjectsInScenarios table
 
@@ -63,7 +63,7 @@ project_buffer_dist : 1
 hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
-build_bike_network : True
+build_bike_network : False
 save_network_files : True  
 create_emme_network: True
 export_build_files: True

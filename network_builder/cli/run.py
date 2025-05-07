@@ -1,4 +1,3 @@
-import pyogrio
 import sys
 import argparse
 import pandas as pd
@@ -11,10 +10,10 @@ from networkx.algorithms.components import *
 import inro.emme.database.emmebank as _eb
 import inro.emme.desktop.app as app
 import json
-import shutil
-from rasterstats import zonal_stats, point_query
+from rasterstats import point_query
 from shutil import copy2 as shcopy
 import os
+import re
 from network_builder.core.emme_utilities import EmmeProject
 from network_builder.core.emme_utilities import EmmeNetwork
 from network_builder.utils.validate_settings import ValidateSettings
@@ -89,6 +88,21 @@ def nodes_to_retain(edges, config, network_data):
     transit_nodes = nodes_from_transit(network_data.gdf_TransitPoints)
     edge_nodes = nodes_from_edges(network_data.df_tolls["PSRCEdgeID"].tolist(), edges)
     return turn_nodes + centroids + transit_nodes + junctions + edge_nodes
+
+def insert_line_at_top(file_path, line_to_insert):
+    """
+    Inserts a line at the top of a file without adding quotes to each line.
+    """
+    file_path = Path(file_path)
+    # Read the existing content of the file
+    with file_path.open("r") as file:
+        lines = file.readlines()
+
+    line_list = [f'{line_to_insert}\n']
+    for line in lines:
+        line_list.append(re.sub(r'"', '', line))
+    with file_path.open("w") as file:
+        file.writelines(line_list)
 
 def create_emme_bank(file_system, config):
     """Create an Emme bank and scenario."""
@@ -369,6 +383,7 @@ def build_network(configs_dir):
                     model_nodes,
                     network_data.gdf_ProjectRoutes,
                     network_data.df_evtPointProjectOutcomes,
+                    network_data.gdf_zones, 
                     config,
                     logger,
                 )
@@ -379,6 +394,7 @@ def build_network(configs_dir):
                 tazindex_cols = ["Zone_id", "zone_ordinal", "Dest_eligible", "External"]
                 _df[tazindex_cols] = _df[tazindex_cols].astype("int32").astype("str")
                 _df.to_csv(path, columns=tazindex_cols, index=False, sep="\t")
+
                 path = file_system.build_file_dir/"p_r_nodes.csv"
                 _df = zonal_inputs_tuple[1]
                 _df[["NodeID", "ZoneID", "Capacity", "Cost"]] = (
@@ -398,7 +414,11 @@ def build_network(configs_dir):
                     ],
                     index=False,
                 )
-
+                _df = zonal_inputs_tuple[2]
+                path = file_system.build_file_dir/"transit_fare_zones.grt"
+                _df.to_csv(path, sep = ' ', header=False, index = False)
+                insert_line_at_top(path, "t groups")
+                
                 headways = TransitHeadways(
                     network_data.gdf_TransitLines,
                     network_data.df_transit_frequencies,
@@ -519,12 +539,12 @@ def build_network(configs_dir):
                 # but need to use it earlier to import from file gdb.
                 gpd.options.io_engine = "fiona"
 
-                model_nodes.to_file(file_system.shapefile_dir/f"{time_period}_junctions.shp",
+                model_nodes.to_file(file_system.shapefile_dir/time_period/f"{time_period}_junctions.shp",
                     driver="ESRI Shapefile",
                 )
 
                 model_links.reset_index(drop=True, inplace=True)
-                model_links.to_file(file_system.shapefile_dir/f"{time_period}_edges.shp",
+                model_links.to_file(file_system.shapefile_dir/time_period/f"{time_period}_edges.shp",
                     driver="ESRI Shapefile",
                 )
                 

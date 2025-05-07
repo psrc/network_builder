@@ -10,11 +10,12 @@ class BuildZoneInputs(object):
     Build the zone inputs for the network. This includes the zone nodes and park and ride nodes.
     """
     def __init__(
-        self, scenario_junctions, projects_gdf, point_events_df, config, logger
+        self, scenario_junctions, projects_gdf, point_events_df, zones_gdf, config, logger
     ):
         self.scenario_junctions = scenario_junctions
         self.project_gdf = projects_gdf
         self.point_events_df = point_events_df
+        self.zones_gdf = zones_gdf
         self.config = config
         self._logger = logger
 
@@ -68,4 +69,17 @@ class BuildZoneInputs(object):
             }
         )
 
-        return (zone_nodes_df, p_r_df)
+        fare_zones_df = zone_nodes_df.sjoin_nearest(self.zones_gdf, how="left")
+        # externals will be outside the TAZ File
+        #fare_zones_df['taz'] = np.where(fare_zones_df.taz.isna(), fare_zones_df.Zone_id, fare_zones_df.taz)
+        #fare_zones_df['taz'] = fare_zones_df['taz'].astype(int)
+        fare_zones_df = fare_zones_df[["Zone_id", "fare_zones"]]
+        fare_zones_df['add_column'] = "a"
+        fare_zones_df = fare_zones_df.iloc[:, [2, 1, 0]]
+
+
+
+
+
+
+        return (zone_nodes_df, p_r_df, fare_zones_df)
