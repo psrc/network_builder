@@ -1,3 +1,4 @@
+import pyogrio
 import sys
 import argparse
 import pandas as pd
