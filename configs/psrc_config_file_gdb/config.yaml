@@ -13,10 +13,13 @@ sde_schema: 'sde'
 version: "'DBO.Nick'"
 #version: "'sde.DEFAULT'"
 
+# you can also choose to export the input data to a file geodatabase. 
+export_to_file_gdb: False
+
 
 # The following should be filled out if using a 'file_gdb' as data_source
 
-file_gdb_path: T:/60day-TEMP/Stefan/soundcast_03282025.gdb
+file_gdb_path: C:/Stefan/networks/test_2023/network_input_data.gdb
 
 
 # Standard user params:

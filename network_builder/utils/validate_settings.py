@@ -7,6 +7,7 @@ from pathlib import Path
 class ValidateSettings(BaseModel):
     # Data sources
     data_source_type: str
+    export_to_file_gdb: bool
     sde_schema: str
     use_sqlalchemy: typing.Any = None
     server: typing.Any = None

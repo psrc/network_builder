@@ -16,6 +16,9 @@ database: OSMTest
 #version: "'DBO.Stefan'"
 version: "'sde.DEFAULT'"
 
+# you can also choose to export the input data to a file geodatabase. 
+export_to_file_gdb: True
+
 
 # The following should be filled out if using a 'file_gdb' as data_source
 
@@ -28,7 +31,7 @@ output_dir: C:/Stefan/networks/lynwood_extension_2024
 
 number_of_pools: 12
 
-model_year: 2023
+model_year: 2024
 input_crs: 2285
 
 output_crs: null
@@ -47,7 +50,7 @@ add_channelization: False
 
 
 # Project/Future network params
-update_network_from_projects : False
+update_network_from_projects : True
 
 scenario_name: lynwood_extension #as defined in the tblProjectsInScenarios table
 

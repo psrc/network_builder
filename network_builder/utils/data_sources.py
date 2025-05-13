@@ -12,7 +12,7 @@ import pandas as pd
 import os
 import numpy as np
 import yaml
-
+from pathlib import Path
 import time
 import sys
 
@@ -109,6 +109,7 @@ def open_from_file_gdb(config, layer_name, is_table=False):
     return gdf
 
 
+
 class NetworkData:
     def __init__(self, config, tables_config):
         self.config = config
@@ -134,7 +135,20 @@ class NetworkData:
 
     def get_data(self, layer_name, is_table):
         if self.config.data_source_type == "enterprise_gdb":
-            return read_from_sde(self.config, layer_name, is_table=is_table)
+            df = read_from_sde(self.config, layer_name, is_table=is_table)
+            if self.config.export_to_file_gdb:
+                export_path = Path(self.config.output_dir)/'network_input_data.gdb'
+                if is_table:
+                    df = gpd.GeoDataFrame(df, geometry=None)
+            
+                df.to_file(
+                    export_path,
+                    driver="OpenFileGDB",
+                    layer=layer_name.split("_")[0],
+                    index=False,
+                )
+            return df
+        
         else:
             return open_from_file_gdb(self.config, layer_name, is_table)
 
