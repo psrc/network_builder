@@ -208,7 +208,7 @@ def build_network(configs_dir):
     turn_list = []
     for turn in network_data.gdf_TurnMovements.iterrows():
         turn = turn[1]
-        j_node = turn.PSRCJunctID + config.node_offset
+        j_node = int(turn.PSRCJunctID) + config.node_offset
         from_edge = scenario_edges[scenario_edges.PSRCEdgeID == turn.FrEdgeID]
         if from_edge.empty:
             logger.warning("Warning: From edge from Turn %s not found!" % (turn.TurnID))
