@@ -27,6 +27,7 @@ class ValidateSettings(BaseModel):
     max_regular_zone: int
     time_periods: list
     add_channelization: bool
+    transit_version: int
 
     # Projects:
     update_network_from_projects: bool

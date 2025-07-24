@@ -160,7 +160,8 @@ class NetworkData:
     def get_transit_lines(self):
         gdf = self.get_data(self.tables_config.transit_lines, False)
         gdf['LineID'] = gdf['LineID'].astype(int)
-        return gdf[gdf["InServiceDate"] == self.config.model_year]
+        gdf = gdf[gdf["InServiceDate"] == self.config.model_year]
+        return gdf[gdf["Version"] == self.config.transit_version]
 
     def get_transit_points(self):
         gdf = self.get_data(self.tables_config.transit_points, False)
