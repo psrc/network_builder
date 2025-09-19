@@ -16,6 +16,10 @@ database: OSMTest
 #version: "'DBO.Stefan'"
 version: "'sde.DEFAULT'"
 
+# Handle transit inservice dates from multiple RTPs
+transit_version: 2026
+ 
+
 # you can also choose to export the input data to a file geodatabase. 
 export_to_file_gdb: True
 
