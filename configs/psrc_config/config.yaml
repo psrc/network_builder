@@ -16,6 +16,13 @@ database: OSMTest
 #version: "'DBO.Stefan'"
 version: "'sde.DEFAULT'"
 
+# Handle transit inservice dates from multiple RTPs
+transit_version: 2026
+ 
+
+# you can also choose to export the input data to a file geodatabase. 
+export_to_file_gdb: True
+
 
 # The following should be filled out if using a 'file_gdb' as data_source
 
@@ -24,11 +31,11 @@ file_gdb_path: T:/2021September/Stefan/network.gdb
 
 # Standard user params:
 
-output_dir: C:/Stefan/networks/test_2023
+output_dir: C:/Stefan/networks/lynwood_extension_2024
 
 number_of_pools: 12
 
-model_year: 2023
+model_year: 2024
 input_crs: 2285
 
 output_crs: null
@@ -47,11 +54,11 @@ add_channelization: False
 
 
 # Project/Future network params
-update_network_from_projects : False
+update_network_from_projects : True
 
-scenario_name: remove_capacity_projects #as defined in the tblProjectsInScenarios table
+scenario_name: lynwood_extension #as defined in the tblProjectsInScenarios table
 
-projects_version_year : 2023
+projects_version_year : 2024
 
 
 # Facilities where slope should be calculated; slope of 0 is assumed otherwise
@@ -67,13 +74,11 @@ hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
 build_bike_network : True
-save_network_files : True  
+save_network_files : False  
 create_emme_network: True
 export_build_files: True
 emme_folder_name: EMME
 emmebank_title : networks
-modes_file: inputs\modes.txt
-transit_vehicle_file: inputs\vehicles.txt
 
 submode_dict : { 'b': 'bus', 
                  'c': 'commuter_rail',

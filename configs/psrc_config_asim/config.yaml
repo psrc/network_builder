@@ -3,33 +3,35 @@
 data_source_type: enterprise_gdb
 
 # The following should be filled out if using an 'enterprise_gdb' connection
-server: Everest10\ss2016
+sde_schema: 'sde'
 
 use_sqlalchemy: False
 
-database: TravelModelGDB
+server: AWS-Prod-SQL\Sockeye
+#server: AWS-SQL2022
 
+database: OSMTest
+#database: Plexus
+
+#version: "'DBO.Stefan'"
 version: "'sde.DEFAULT'"
 
 
 # The following should be filled out if using a 'file_gdb' as data_source
 
-file_gdb_path: H:/Model_Dev/Master_Network/PSRC_Model_Network/network/network.gdb
+file_gdb_path: T:/2021September/Stefan/network.gdb
 
 
 # Standard user params:
 
-output_dir: C:/NB/B18_4   ########################################################
-#output_dir: pierce_test
+output_dir: C:/Stefan/networks/sc_2023_asim
 
-number_of_pools: 1  #5
+number_of_pools: 12
 
-model_year: 2018    #######################################################
-        
+model_year: 2023
+input_crs: 2285
 
-input_crs: 2927 # Pierce County projection
-
-output_crs: 2285 # PSRC projection WA stateplane North
+output_crs: null
 
 main_log_file : 'run_log'
 
@@ -41,14 +43,15 @@ max_regular_zone: 3700
 
 time_periods: ['AM','MD','PM','EV','NI']
 
-add_channelization: True
+add_channelization: False
+
 
 # Project/Future network params
-update_network_from_projects : False  #### True   ####################################################
+update_network_from_projects : False
 
-scenario_name: constrained_2050    #### remove_capacity_projects #as defined in the tblProjectsInScenarios table  ###################################
+scenario_name: remove_capacity_projects #as defined in the tblProjectsInScenarios table
 
-projects_version_year : 2022   ###################################################
+projects_version_year : 2023
 
 
 # Facilities where slope should be calculated; slope of 0 is assumed otherwise
@@ -63,8 +66,8 @@ project_buffer_dist : 1
 hov_shift_dist : 1.906090351
 
 build_transit_headways : True 
-build_bike_network : False  ####True
-save_network_files : True  
+build_bike_network : True
+save_network_files : False  
 create_emme_network: True
 export_build_files: True
 emme_folder_name: EMME
@@ -86,18 +89,11 @@ ferry_link_factor: 2.0
 
 
 transit_headway_mapper : 
-  'hdw_5to6' : ['hour_5']
-  'hdw_6to7' : ['hour_6']
-  'hdw_7to8' : ['hour_7'] 
-  'hdw_8to9' : ['hour_8']
-  'hdw_9to10' : ['hour_9']
-  'hdw_10to14' : ['hour_10', 'hour_11', 'hour_12', 'hour_13']
-  'hdw_14to15' : ['hour_14']
-  'hdw_15to16' : ['hour_15']
-  'hdw_16to17' : ['hour_16']
-  'hdw_17to18' : ['hour_17']
+  'hdw_5to9' : ['hour_5', 'hour_6', 'hour_7', 'hour_8']
+  'hdw_9to15' : ['hour_9', 'hour_10', 'hour_11', 'hour_12', 'hour_13', 'hour_14']
+  'hdw_15to18' : ['hour_15', 'hour_16', 'hour_17']
   'hdw_18to20' : ['hour_18', 'hour_19']
-
+  'hdw_20to5' : ['hour_20', 'hour_21', 'hour_22', 'hour_23', 'hour_24', 'hour_25']
 
 reversibles:
   'AM' : [False, False]
@@ -107,7 +103,7 @@ reversibles:
   'NI' : [False, True]
 
 extra_attributes:
-  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'upslp','bkfac', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'FGTS', 'ttf', 'Channelization']
+  'LINK' : ['FacilityType', 'CountyID', 'CountID', 'CorridorID', 'is_managed', 'PSRCEdgeID', 'upslp','bkfac', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'FGTS', 'ttf']
   'NODE' : ['lr_walk', 'hdwfr', 'wait', 'invt']
   'TRANSIT_LINE' : ['TransitType']
 
@@ -117,7 +113,7 @@ dir_columns: ['IJLanesGPAM', 'IJLanesGPMD', 'IJLanesGPPM', 'IJLanesGPEV', 'IJLan
 'IJLanesHOVAM', 'IJLanesHOVMD', 'IJLanesHOVPM', 'IJLanesHOVEV', 'IJLanesHOVNI', 'JILanesHOVAM', 
 'JILanesHOVMD', 'JILanesHOVPM', 'JILanesHOVEV', 'JILanesHOVNI', 'IJSpeedLimit', 'JISpeedLimit', 
 'IJVDFunc', 'JIVDFunc', 'IJLaneCapGP', 'IJLaneCapHOV', 'JILaneCapGP', 'JILaneCapHOV', 'IJSideWalks', 
-'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK','IJBikeFacility','JIBikeFacility']
+'JISideWalks', 'IJBikeLanes', 'JIBikeLanes', 'IJLanesTR', 'JILanesTR', 'IJLanesTK', 'JILanesTK','IJBikeType','JIBikeType']
 
 toll_columns: ['PSRCEdgeID']  
 
@@ -133,7 +129,7 @@ dir_toll_columns : ['IJtollSOVAM',
 'JItollTrkHvyPM', 'JItollTrkHvyEV','JItollTrkHvyNI']
 
 # Non-Directional attributes used for networkt thnning.
-non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x', 'Channelization']
+non_dir_columns : ['FacilityType', 'NewFacilityTpe', 'LinkType', 'projRteID', 'Modes', 'Oneway', 'CountID', 'CountyID', 'Processing_x']
 
 # Attributes in addition to the dir_attributes that can get updated by projects
 project_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway', 'InServiceDate']
@@ -141,11 +137,11 @@ project_columns : ['projRteID', 'Change_Type', 'Modes', 'FacilityType', 'Oneway'
 # Non directional attributes that can be updated by a project
 project_update_columns : ['Oneway']
 
-intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'geometry', 'projRteID', 'Processing_x', 'Channelization']
+intermediate_keep_columns : ['PSRCEdgeID', 'FacilityType', 'NewFacilityType', 'LinkType', 'Modes', 'INode', 'JNode', 'Oneway', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'geometry', 'projRteID', 'Processing_x']
 
 emme_link_columns : ['direction', 'i', 'j', 'length', 'modes', 'type', 'lanes', 'vdf', 'ul1', 'ul2', 'ul3', 'toll1', 'toll2', 'toll3', 'trkc1', 'trkc2', 'trkc3', 'ttf']
 
-additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed','bkfac', 'Channelization']
+additional_keep_columns: ['geometry', 'PSRCEdgeID', 'FacilityType', 'Processing_x', 'projRteID', 'CountID', 'CountyID', 'CorridorID', 'FGTS', 'is_managed', 'bkfac']
 
 emme_node_columns : ['is_zone', 'i', 'Processing', 'P_RStalls', 'PSRCjunctID', 'lr_walk',  'hdwfr', 'wait', 'invt']
 

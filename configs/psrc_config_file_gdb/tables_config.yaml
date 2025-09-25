@@ -21,3 +21,5 @@ projects_in_scenarios: tblProjectsInScenarios
 project_attributes: tblLineProjects
 
 point_events: evtPointProjectOutcomes
+
+zones: taz2010

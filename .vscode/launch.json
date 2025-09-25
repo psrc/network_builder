@@ -8,10 +8,11 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "network_builder/cli/run.py",
+            //"program": "network_builder/cli/main.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["-c", "E:/test/network_builder/configs/psrc_config"],
+            "args": ["-c", "C:/Stefan/network_builder/configs/psrc_config"],
             "subProcess": true
         }
     ]

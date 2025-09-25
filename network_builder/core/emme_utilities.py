@@ -1,35 +1,200 @@
-# Copyright [2014] [Puget Sound Regional Council]
-
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-
-#    http://www.apache.org/licenses/LICENSE-2.0
-
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+from pathlib import Path
+import numpy as np
+import pandas as pd
 import inro.emme.desktop.app as app
 import inro.modeller as _m
 import inro.emme.matrix as ematrix
 import inro.emme.database.matrix
 import inro.emme.database.emmebank as _eb
-import os, sys
-import re
-import multiprocessing as mp
-import subprocess
-import pandas as pd
+import geopandas as gpd
+import os
 import json
-from multiprocessing import Pool, pool
+import os
+import sys
+import shutil
+from shutil import copy2 as shcopy
 
-sys.path.append(os.path.join(os.getcwd(), "inputs"))
-sys.path.append(os.getcwd())
-# from input_configuration import *
-# from EmmeProject import *
 
+
+class EmmeNetwork(object):
+    def __init__(
+        self,
+        emme_project,
+        time_period,
+        transit_lines,
+        model_links,
+        model_nodes,
+        turns,
+        config,
+        logger,
+        file_system,
+        transit_segments=None,
+    ):
+        model_links.fillna(0, inplace=True)
+        self.emme_project = emme_project
+        self.time_period = time_period
+        self.links = model_links
+        self.nodes = model_nodes
+        self.turns = turns[turns["Function" + time_period.upper()] != 99]
+        self.transit_segments = transit_segments
+        # transit_lines = transit_lines[transit_lines.InServiceD==2014]
+        transit_lines = transit_lines.loc[
+            transit_lines["Headway_" + self.time_period] > 0
+        ]
+        self.transit_lines = transit_lines
+        self.config = config
+        self.file_system = file_system
+        self._logger = logger
+
+    def _create_scenario(self, scenario_name, scenario_id):
+        scenario = self.emme_project.bank.create_scenario(scenario_id)
+        scenario.title = scenario_name
+        return scenario
+
+    def load_network(self):
+        scenario_id = self.config.time_periods.index(self.time_period) + 1
+        scenario = self._create_scenario(self.time_period, scenario_id)
+        self.emme_project.process_modes(self.file_system.configs_dir/"modes.txt", scenario)
+        self.emme_project.process_vehicles(self.file_system.configs_dir/"vehicles.txt", scenario)
+        # ('inputs/scenario/networks/' + self.config['transit_vehicle_file'] , self.emme_project.bank.scenario(scenario_id))
+        self._load_network_elements(scenario)
+
+    def _create_extra_attributes(self, scenario):
+        for type, atts in self.config.extra_attributes.items():
+            for att in atts:
+                att = "@" + att
+                scenario.create_extra_attribute(type, att.lower())
+
+    def _load_network_elements(self, scenario):
+        self._create_extra_attributes(scenario)
+        network = scenario.get_network()
+        for node in self.nodes.iterrows():
+            node = node[1]
+            if node.i <= 4000:
+                emme_node = network.create_centroid(node.i)
+            else:
+                emme_node = network.create_regular_node(node.i)
+            emme_node.x = node.geometry.x
+            emme_node.y = node.geometry.y
+            for att in self.config.extra_attributes["NODE"]:
+                emme_node["@" + att.lower()] = node[att]
+
+        for link in self.links.iterrows():
+            link = link[1]
+            if int(link.lanes) > 0:
+                # print (link.i, link.j)
+                # print (link.modes)
+                emme_link = network.create_link(link.i, link.j, link.modes.strip())
+                emme_link.type = int(link.type)
+                if self.config.add_channelization:
+                    emme_link.num_lanes = link.lanes + link.Channelization
+                else:
+                    emme_link.num_lanes = link.lanes
+                emme_link.length = link.length
+                emme_link.volume_delay_func = int(link.vdf)
+                emme_link.data1 = int(link.ul1)
+                emme_link.data2 = round(link.ul2, 2)
+                emme_link.data3 = int(link.ul3)
+                # extra attributes:
+                for att in self.config.extra_attributes["LINK"]:
+                    emme_link["@" + att.lower()] = link[att]
+
+                emme_link.vertices = vertices = list(link.geometry.coords)[1:-1]
+            else:
+                self._logger.warning(
+                    "No lanes for link %s-%s in the %s network! Removing Link."
+                    % (link.i, link.j, self.time_period)
+                )
+        scenario.publish_network(network)
+        for i in self.turns.j_node.unique():
+            if network.node(i):
+                test = network.create_intersection(i)
+            else:
+                self._logger.warning(
+                    "Could not find find node %s in %s network!" % (i, self.time_period)
+                )
+        for turn in self.turns.iterrows():
+            turn = turn[1]
+            # test = network.create_intersection(turn.i_node)
+            if turn["Function" + self.time_period] == 0:
+                emme_turn = network.turn(turn.i_node, turn.j_node, turn.k_node)
+                if emme_turn:
+                    emme_turn.penalty_func = 0
+                else:
+                    self._logger.warning(
+                        "Could not find find turn %s, %s, %s in %s network!"
+                        % (turn.i_node, turn.j_node, turn.k_node, self.time_period)
+                    )
+
+        if self.transit_segments is not None:
+            self.transit_segments.set_index("seg_id", inplace=True)
+            for line in self.transit_lines.iterrows():
+                line = line[1]
+                segs = self.transit_segments.loc[
+                    self.transit_segments.route_id == line.LineID
+                ]
+                if segs.empty:
+                    self._logger.warning(
+                        "No transit segments for line %s in %s segment table!"
+                        % (line.LineID, self.time_period)
+                    )
+                    continue
+
+                elif len(segs) == 1:
+                    try:
+                        emme_line = network.create_transit_line(
+                            line.LineID, line.VehicleType, [segs.INode, segs.JNode]
+                        )
+                    except Exception as ex:
+                        print(ex)
+                        self._logger.warning(
+                            "Failed to create line %s for %s time period."
+                            % (line.LineID, self.time_period)
+                        )
+                        sys.exit()
+
+                else:
+                    nodes = segs.INode.tolist() + [segs.JNode.tolist()[-1]]
+                    try:
+                        emme_line = network.create_transit_line(
+                            line.LineID, line.VehicleType, nodes
+                        )
+                    except Exception as ex:
+                        print(ex)
+                        self._logger.warning(
+                            "Failed to create line %s for %s time period."
+                            % (line.LineID, self.time_period)
+                        )
+                        sys.exit()
+
+                emme_line.description = line.Description[0:20]
+                emme_line.speed = line.Speed
+                emme_line.headway = line["Headway_" + self.time_period]
+                emme_line.data1 = line.Processing
+                emme_line.data3 = line.Operator
+                for att in self.config.extra_attributes["TRANSIT_LINE"]:
+                    emme_line["@" + att.lower()] = line[att]
+
+            x = 0
+            for line in network.transit_lines():
+                x = x + 1
+                for seg in line.segments():
+                    row = self.transit_segments.loc[seg.id]
+                    seg.transit_time_func = row.ttf
+                    if line.mode == "f" or line.mode == "c" or line.mode == "r":
+                        seg.allow_alightings = True
+                        seg.allow_boardings = True
+                        seg.dwell_time = 0
+                    if row.is_stop:
+                        seg.allow_alightings = True
+                        seg.allow_boardings = True
+                        seg.dwell_time = 0.25
+                    else:
+                        seg.allow_alightings = False
+                        seg.allow_boardings = False
+                        seg.dwell_time = False
+
+        scenario.publish_network(network)
 
 class EmmeProject:
     def __init__(self, filepath):
@@ -42,24 +207,18 @@ class EmmeProject:
         self.data_base = self.data_explorer.active_database()
         # delete locki:
         self.m.emmebank.dispose()
-        pathlist = filepath.split("/")
+        #pathlist = filepath.split("/")
         self.fullpath = filepath
-        self.filename = pathlist.pop()
-        self.dir = "/".join(pathlist) + "/"
+        #self.filename = pathlist.pop()
+        #self.dir = "/".join(pathlist) + "/"
         self.bank = self.m.emmebank
         self.tod = self.bank.title
         self.data_explorer = self.desktop.data_explorer()
         self.primary_scenario = self.data_explorer.primary_scenario
 
-    # def network_counts_by_element(self, element):
-    #    network = self.current_scenario.get_network()
-    #    d = network.element_totals
-    #    count = d[element]
-    #    return count
     def change_active_database(self, database_name):
         for database in self.data_explorer.databases():
             if database.title() == database_name:
-
                 database.open()
                 self.bank = self.m.emmebank
                 self.tod = self.bank.title
@@ -290,7 +449,6 @@ class EmmeProject:
 
 
 def json_to_dictionary(dict_name):
-
     # Determine the Path to the input files and load them
     input_filename = os.path.join("inputs/skim_params/", dict_name + ".json").replace(
         "\\", "/"
@@ -302,3 +460,9 @@ def json_to_dictionary(dict_name):
 
 def close():
     app.close()
+
+if __name__ == "__main__":
+    pass
+    # This is just a placeholder to prevent the script from running when imported
+
+

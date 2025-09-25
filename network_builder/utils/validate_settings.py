@@ -7,6 +7,7 @@ from pathlib import Path
 class ValidateSettings(BaseModel):
     # Data sources
     data_source_type: str
+    export_to_file_gdb: bool
     sde_schema: str
     use_sqlalchemy: typing.Any = None
     server: typing.Any = None
@@ -26,6 +27,7 @@ class ValidateSettings(BaseModel):
     max_regular_zone: int
     time_periods: list
     add_channelization: bool
+    transit_version: int
 
     # Projects:
     update_network_from_projects: bool
@@ -44,9 +46,6 @@ class ValidateSettings(BaseModel):
     export_build_files: bool
     emme_folder_name: str
     emmebank_title: str
-    modes_file: str
-    transit_vehicle_file: str
-
     submode_dict: dict
 
     # Bike Network
@@ -116,3 +115,36 @@ class ValidateSettings(BaseModel):
                 )
             else:
                 return v
+
+
+class ValidateTableSettings(BaseModel):
+    mode_attributes: Optional[str] = None
+
+    mode_tolls: str
+
+    edges: str
+
+    transit_lines: str
+
+    transit_points: str
+
+    turn_movements: str
+
+    junctions: str
+
+    transit_frequencies: str
+
+    project_routes: str
+
+    projects_in_scenarios: str
+
+    project_attributes: str
+
+    point_events: str
+
+    zones: str
+
+    @validator("mode_attributes")
+    def prevent_none(cls, v):
+        assert v is not None, "size may not be None"
+        return v

@@ -2,6 +2,9 @@ name: network_builder_env
 channels:
   - conda-forge
   - defaults
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+  - https://repo.anaconda.com/pkgs/msys2
 dependencies:
   - annotated-types=0.7.0=pyhd8ed1ab_0
   - blosc=1.21.6=h85f69ea_0
@@ -11,10 +14,10 @@ dependencies:
   - brotli-python=1.1.0=py311hda3d55a_2
   - bzip2=1.0.8=h2466b09_7
   - c-blosc2=2.15.1=hb461149_0
-  - ca-certificates=2024.9.24=haa95532_0
+  - ca-certificates=2025.1.31=h56e8100_0
   - cached-property=1.5.2=hd8ed1ab_1
   - cached_property=1.5.2=pyha770c72_1
-  - certifi=2024.8.30=py311haa95532_0
+  - certifi=2025.1.31=pyhd8ed1ab_0
   - cffi=1.17.1=py311he736701_0
   - charset-normalizer=3.4.0=pyhd8ed1ab_0
   - contourpy=1.3.1=py311h3257749_0
@@ -49,6 +52,7 @@ dependencies:
   - libbrotlidec=1.1.0=h2466b09_2
   - libbrotlienc=1.1.0=h2466b09_2
   - libcblas=3.9.0=25_win64_mkl
+  - libcst=1.5.0=py311h9363f20_0
   - libcurl=8.10.1=h1ee3ff0_0
   - libdeflate=1.22=h2466b09_0
   - libexpat=2.6.3=he0c23c2_0
@@ -81,13 +85,15 @@ dependencies:
   - matplotlib-base=3.9.2=py311h8f1b1e4_2
   - minizip=4.0.6=hb638d1e_0
   - mkl=2024.2.2=h66d3029_14
+  - monkeytype=23.3.0=pyh70fd9c4_1
   - msys2-conda-epoch=20160418=1
   - munkres=1.1.4=pyh9f0ad1d_0
+  - mypy_extensions=1.0.0=pyha770c72_1
   - networkx=3.4.2=pyh267e887_2
   - numexpr=2.10.1=mkl_py311hd5da7cd_3
   - numpy=1.26.2=py311h0b4df5a_0
   - openjpeg=2.5.2=h3d672ee_0
-  - openssl=3.4.0=h2466b09_0
+  - openssl=3.5.0=ha4e3fda_0
   - packaging=24.1=pyhd8ed1ab_0
   - pandana=0.7=py311hcf9f919_3
   - pandas=2.2.3=py311hcf9f919_1
@@ -115,6 +121,7 @@ dependencies:
   - python-tzdata=2024.2=pyhd8ed1ab_0
   - python_abi=3.11=5_cp311
   - pytz=2024.1=pyhd8ed1ab_0
+  - pyyaml=6.0.2=py311h5082efb_2
   - qhull=2020.2=hc790b64_5
   - requests=2.32.3=pyhd8ed1ab_0
   - scikit-learn=1.5.2=py311hdcb8d17_1
@@ -132,6 +139,7 @@ dependencies:
   - toml=0.10.2=pyhd8ed1ab_0
   - typing-extensions=4.12.2=hd8ed1ab_0
   - typing_extensions=4.12.2=pyha770c72_0
+  - typing_inspect=0.9.0=pyhd8ed1ab_1
   - tzdata=2024b=hc8b5060_0
   - ucrt=10.0.22621.0=h57928b3_1
   - unicodedata2=15.1.0=py311he736701_1
@@ -147,14 +155,24 @@ dependencies:
   - xorg-libxdmcp=1.1.3=hcd874cb_0
   - xyzservices=2024.9.0=pyhd8ed1ab_0
   - xz=5.2.6=h8d14728_0
+  - yaml=0.2.5=h8ffe710_2
   - zlib=1.3.1=h2466b09_2
   - zlib-ng=2.2.2=he0c23c2_0
   - zstandard=0.23.0=py311h53056dc_1
   - zstd=1.5.6=h0ea2cb4_0
   - pip:
-    - affine==2.4.0
-    - rasterio==1.4.2
-    - rasterstats==0.20.0
-    - simplejson==3.19.3
-    - xlsxwriter==3.2.0
-prefix: C:\Users\Modeller.PSRC\Anaconda3\envs\model_py311
+      - affine==2.4.0
+      - attrs==25.3.0
+      - click==8.1.8
+      - click-plugins==1.1.1
+      - cligj==0.7.2
+      - colorama==0.4.6
+      - fiona==1.10.1
+      - pandera==0.24.0
+      - pyaml==25.1.0
+      - rasterio==1.4.2
+      - rasterstats==0.20.0
+      - simplejson==3.19.3
+      - transit-service-analyst==0.1.5
+      - typeguard==4.4.2
+      - xlsxwriter==3.2.0

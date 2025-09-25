@@ -1,18 +1,17 @@
 import geopandas as gpd
 import pandas as pd
-import modules.log_controller
 import numpy as np
 from shapely.geometry import LineString
 from shapely.geometry import Point
 
 
 class BuildHOVSystem(object):
-    def __init__(self, network_gdf, junctions_gdf, config):
+    def __init__(self, network_gdf, junctions_gdf, logger, config):
         self.network_gdf = network_gdf
         self.junctions_gdf = junctions_gdf
         # self.time_period = time_period
         self.config = config
-        self._logger = modules.log_controller.logging.getLogger("main_logger")
+        self._logger = logger
         self.hov_edges = self._get_hov_edges()
         self.hov_junctions = self._get_hov_junctions()
         self.hov_weave_edges = self._get_weave_edges()
@@ -44,7 +43,7 @@ class BuildHOVSystem(object):
         hov_edges = self.network_gdf[self.network_gdf["is_hov"] > 0]
         # Shift them
         shift_edges_geom = hov_edges.geometry.apply(
-            self._shift_edges, args=(self.config["hov_shift_dist"],)
+            self._shift_edges, args=(self.config.hov_shift_dist,)
         )
 
         # Update the the geometry column
@@ -68,7 +67,7 @@ class BuildHOVSystem(object):
         ]
 
         shift_junctions = hov_junctions.geometry.apply(
-            self._shift_junctions, args=(self.config["hov_shift_dist"],)
+            self._shift_junctions, args=(self.config.hov_shift_dist,)
         )
 
         hov_junctions.update(shift_junctions)
@@ -121,7 +120,7 @@ class BuildHOVSystem(object):
         # Create line geometry using the GP & HOV Junctions
         weave_edges["geometry"] = weave_edges.apply(self._create_edge, axis=1)
         weave_edges.drop(columns=["geometry_x", "geometry_y"], inplace=True)
-        #weave_edges.drop("geometry_x", 1, inplace=True)
+        # weave_edges.drop("geometry_x", 1, inplace=True)
         weave_edges["NewINode"] = weave_edges["ScenarioNodeID"]
         weave_edges["FacilityType"] = 98
         weave_edges["Oneway"] = 2

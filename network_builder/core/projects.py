@@ -1,19 +1,23 @@
 import geopandas as gpd
 import pandas as pd
-import modules.log_controller
+
+# import modules.log_controller
 import numpy as np
 import sys
 import os
 
 
 class FlagNetworkFromProjects(object):
-    def __init__(self, network_gdf, projects_gdf, junctions_gdf, config):
+    """
+    Class to flag network edges that are updated by projects.
+    """
+    def __init__(self, network_gdf, projects_gdf, junctions_gdf, config, logger):
         # self.network_gdf = network_gdf[network_gdf['OutServiceDate']>=config['model_year']]
         self.network_gdf = network_gdf
         self.project_gdf = projects_gdf
         self.junctions_gdf = junctions_gdf
         self.config = config
-        self._logger = modules.log_controller.logging.getLogger("main_logger")
+        self._logger = logger
         self.route_edges = self._get_route_edges()
         self.edge_proj_dict = self._edge_project_map()
         self.route_junctions = self._get_route_junctions()
@@ -28,14 +32,16 @@ class FlagNetworkFromProjects(object):
         Returns a GeoDataFrame of edges that are covered by projects.
         The project with the farthest horizion date is used in cases
         where an edge is updated by more than one project.
-       """
+        """
 
         buff_projects = self.project_gdf.copy()
         buff_projects["geometry"] = self.project_gdf.geometry.buffer(
-            self.config["project_buffer_dist"]
+            self.config.project_buffer_dist
         )
 
-        edges = gpd.sjoin(self.network_gdf, buff_projects, how="inner", predicate="within")
+        edges = gpd.sjoin(
+            self.network_gdf, buff_projects, how="inner", predicate="within"
+        )
 
         edges = edges.sort_values(by=["InServiceDate_right"], ascending=False)
 
@@ -43,17 +49,18 @@ class FlagNetworkFromProjects(object):
 
         # Warn users
         dup_edges = edges.loc[edges.freq > 1]
-        dup_edges_dict = (
-            dup_edges.groupby(["PSRCEdgeID"])
-            .apply(lambda x: list(x.projRteID))
-            .to_dict()
-        )
-
-        for edge_id, proj_ids in dup_edges_dict.items():
-            self._logger.info(
-                "Warning! Edge %s is covered by more than one project: %s."
-                % (edge_id, proj_ids)
+        if not dup_edges.empty:
+            dup_edges_dict = (
+                dup_edges.groupby(["PSRCEdgeID"])
+                .apply(lambda x: list(x.projRteID))
+                .to_dict()
             )
+
+            for edge_id, proj_ids in dup_edges_dict.items():
+                self._logger.info(
+                    "Warning! Edge %s is covered by more than one project: %s."
+                    % (edge_id, proj_ids)
+                )
 
         # edges = gpd.GeoDataFrame(edges.groupby('PSRCEdgeID').first())
         # edges.reset_index(inplace=True)
@@ -63,7 +70,7 @@ class FlagNetworkFromProjects(object):
         """
         Returns a dictionary containing the map between edge and project.
         The key is edge id and the value is project id.
-       """
+        """
         return (
             self.route_edges.groupby(["PSRCEdgeID"])
             .apply(lambda x: list(x.projRteID))
@@ -101,7 +108,6 @@ class FlagNetworkFromProjects(object):
 
         edge_dict = {}
         for edge in self.route_edges.itertuples():
-
             # Oneway IJ or reversible
             if edge.Oneway_left == 0 or edge.Oneway_left == 1:
                 edge_dict[(edge.INode, edge.JNode, edge.projRteID)] = {
@@ -134,7 +140,14 @@ class FlagNetworkFromProjects(object):
 
         edge_list = []
         for edge in self.network_gdf.itertuples():
-            if edge.geometry.type == "MultiLineString":
+            if edge.geometry is None:
+                self._logger.warning(
+                    "WARNING: edge "
+                    + str(edge.PSRCEdgeID)
+                    + " does not have a geometry. Please fix."
+                )
+                sys.exit(1)
+            if edge.geometry.geom_type == "MultiLineString":
                 self._logger.warning(
                     "WARNING: edge "
                     + str(edge.PSRCEdgeID)
@@ -167,7 +180,7 @@ class FlagNetworkFromProjects(object):
         attributes are applied correctly to the edges beneath them. The
         project with the farthest horizion date is used in cases where
         an edge is updated  by more than one project.
-       """
+        """
         route_id_list = list(set(self.route_edges.projRteID.tolist()))
         proj_edge_list = []
         updated_edge_count_list = []
@@ -203,7 +216,6 @@ class FlagNetworkFromProjects(object):
                         node_list[1],
                         node_list[0],
                     ) in self.valid_edges:
-
                         edge_count = edge_count + 1
 
                         # Check that the edge has been flagged by proj
@@ -212,14 +224,12 @@ class FlagNetworkFromProjects(object):
                             node_list[1],
                             route_id,
                         ) in self.route_edges_dict.keys():
-
                             # Get the edge info, stored in a dictionary
                             edge_dict = self.route_edges_dict[
                                 node_list[0], node_list[1], route_id
                             ]
 
                             if edge_dict in proj_edge_list:
-
                                 if edge_dict["projRteID"] == route_id:
                                     self._logger.info(
                                         "Edge %s already tagged by this project"
@@ -246,7 +256,6 @@ class FlagNetworkFromProjects(object):
                             node_list[0],
                             route_id,
                         ) in self.route_edges_dict.keys():
-
                             self._logger.info(
                                 "Project %s seems to be digitized in the"
                                 " wrong direction. Updating, but should"
@@ -259,7 +268,6 @@ class FlagNetworkFromProjects(object):
                             ]
 
                             if edge_dict in proj_edge_list:
-
                                 if edge_dict["projRteID"] == route_id:
                                     self._logger.info(
                                         "Edge %s already tagged by this project"
@@ -286,7 +294,6 @@ class FlagNetworkFromProjects(object):
                                 node_list[1],
                                 route_id,
                             ) in self.route_edges_dict.keys():
-
                                 edge_id = self.route_edges_dict[
                                     node_list[0], node_list[1], route_id
                                 ]["PSRCEdgeID"]
@@ -334,7 +341,7 @@ class FlagNetworkFromProjects(object):
         edge_count_df["difference"] = (
             edge_count_df["initial_edge_count"] - edge_count_df["final_edge_count"]
         )
-        dir = os.path.join(self.config["output_dir"], "logs")
+        dir = os.path.join(self.config.output_dir, "logs")
         edge_count_df.to_csv(os.path.join(dir, "project_edge_trace.csv"), index=False)
         return pd.DataFrame(proj_edge_list)
 
@@ -346,7 +353,7 @@ class FlagNetworkFromProjects(object):
         digitized in the opposite direction of the project, then it's
         directional attrbutes are switched before updating. So all IJ
         attributes become JI and vise versa.
-       """
+        """
 
         project_edges = self.flagged_edges.merge(
             self.project_gdf, on="projRteID", how="left"
@@ -354,7 +361,7 @@ class FlagNetworkFromProjects(object):
 
         scenario_edges = self.network_gdf[
             (
-                (self.network_gdf.InServiceDate <= self.config["model_year"])
+                (self.network_gdf.InServiceDate <= self.config.model_year)
                 & (self.network_gdf.ActiveLink > 0)
                 & (self.network_gdf.ActiveLink != 999)
             )
@@ -365,8 +372,8 @@ class FlagNetworkFromProjects(object):
         ij_proj_edges = project_edges[project_edges.dir == "IJ"].copy()
         ji_proj_edges = project_edges[project_edges.dir == "JI"].copy()
 
-        switch_columns = [x[1] + x[0] + x[2:] for x in self.config["dir_columns"]]
-        rename_dict = dict(zip(self.config["dir_columns"], switch_columns))
+        switch_columns = [x[1] + x[0] + x[2:] for x in self.config.dir_columns]
+        rename_dict = dict(zip(self.config.dir_columns, switch_columns))
 
         # Switch IJ & JI attributes for edges that are
         # digitized in the opposite direction of the project
@@ -380,7 +387,7 @@ class FlagNetworkFromProjects(object):
         merged_projects.set_index("PSRCEdgeID", inplace=True)
 
         merged_projects = merged_projects[
-            self.config["project_columns"] + self.config["dir_columns"]
+            self.config.project_columns + self.config.dir_columns
         ]
         scenario_edges.set_index("PSRCEdgeID", inplace=True)
 
@@ -403,7 +410,7 @@ class FlagNetworkFromProjects(object):
                 row_dict = {"PSRCEdgeID": edge_id}
                 edges = multiple_projects[multiple_projects["PSRCEdgeID"] == edge_id]
                 for col in (
-                    self.config["dir_columns"] + self.config["project_update_columns"]
+                    self.config.dir_columns + self.config.project_update_columns
                 ):
                     # If all values are -1
                     if max(edges[col].values) == -1:
@@ -430,7 +437,7 @@ class FlagNetworkFromProjects(object):
             # get rid of duplicate edges:
             merged_projects = merged_projects[merged_projects.index.value_counts() == 1]
             merged_projects = pd.concat([merged_projects, unique_edges_df])
-        
+
         ############################
         # Recode -1s to Nan so they do not update scenario edges
         merged_projects.replace(-1, np.NaN, inplace=True)

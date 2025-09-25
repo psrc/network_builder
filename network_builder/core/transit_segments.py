@@ -1,19 +1,18 @@
 import geopandas as gpd
 import pandas as pd
-import modules.log_controller
 import numpy as np
 
 
 class ConfigureTransitSegments(object):
     def __init__(
-        self, time_period, transit_segments, transit_lines, model_links, config
+        self, time_period, transit_segments, transit_lines, model_links, config, logger
     ):
         self.time_period = time_period
         self.transit_segments = transit_segments
         self.transit_lines = transit_lines
         self.model_links = model_links
         self.config = config
-        self._logger = modules.log_controller.logging.getLogger("main_logger")
+        self._logger = logger
 
     def configure(self):
         self.transit_segments.sort_values(["route_id", "order"], inplace=True)

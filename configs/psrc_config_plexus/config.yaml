@@ -72,8 +72,6 @@ create_emme_network: True
 export_build_files: True
 emme_folder_name: EMME
 emmebank_title : networks
-modes_file: inputs\modes.txt
-transit_vehicle_file: inputs\vehicles.txt
 
 submode_dict : { 'b': 'bus', 
                  'c': 'commuter_rail',

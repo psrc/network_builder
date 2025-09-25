@@ -1,6 +1,5 @@
 import geopandas as gpd
 import pandas as pd
-import modules.log_controller
 import numpy as np
 from shapely.geometry import LineString
 
@@ -12,6 +11,7 @@ class BuildScenarioLinks(object):
         scenario_junctions,
         time_period,
         config,
+        logger,
         reversible_both_dir=False,
         reversible_switch_dir=False,
     ):
@@ -21,25 +21,25 @@ class BuildScenarioLinks(object):
         self.config = config
         self.reversible_both_dir = reversible_both_dir
         self.reversible_switch_dir = reversible_switch_dir
-        self._logger = modules.log_controller.logging.getLogger("main_logger")
+        self._logger = logger
         self.full_network = self.create_full_model_network()
         self.junctions = self._create_junctions()
 
     def _create_junctions(self):
         junctions = pd.concat(
-            [self.junctions_gdf, pd.DataFrame(columns=self.config["emme_node_columns"])]
+            [self.junctions_gdf, pd.DataFrame(columns=self.config.emme_node_columns)]
         )
         junctions["i"] = junctions["ScenarioNodeID"]
         junctions["is_zone"] = np.where(
-            junctions["ScenarioNodeID"] <= int(self.config["max_zone_number"]), 1, 0
+            junctions["ScenarioNodeID"] <= int(self.config.max_zone_number), 1, 0
         ).astype(int)
-        junctions = junctions[self.config["emme_node_columns"] + ["geometry"]]
+        junctions = junctions[self.config.emme_node_columns + ["geometry"]]
         return junctions
 
     def create_full_model_network(self):
         # add columns for emme
         network = pd.concat(
-            [self.network_gdf, pd.DataFrame(columns=self.config["emme_link_columns"])]
+            [self.network_gdf, pd.DataFrame(columns=self.config.emme_link_columns)]
         )
 
         # because a two way GP lane does not always have two way GP
@@ -49,21 +49,21 @@ class BuildScenarioLinks(object):
 
         # upadte all attributes, then do special ones later
         network = self._configure_standard_attributes(
-            network, self.config["standard_links"]
+            network, self.config.standard_links
         )
 
         # switch one way JI to IJ
         ji_edges = self._switch_oneway_ji(network)
         # configure oneway JI attributes
         ji_edges = self._configure_standard_attributes(
-            ji_edges, self.config["standard_links"]
+            ji_edges, self.config.standard_links
         )
         network.update(ji_edges)
 
         # create reverse links for two way streets
         reverse_links = self._create_reverse_links(network)
         reverse_links = self._configure_standard_attributes(
-            reverse_links, self.config["standard_links"]
+            reverse_links, self.config.standard_links
         )
         network = pd.concat([network, reverse_links])
         network.reset_index(inplace=True)
@@ -78,20 +78,20 @@ class BuildScenarioLinks(object):
         network = self._configure_transit_links(network)
 
         # configure BAT links
-        network = self._configure_BAT_links(network, self.config["bat_links"])
+        network = self._configure_BAT_links(network, self.config.bat_links)
 
         # reverse reversibles?
         if self.reversible_switch_dir:
             reversibles = self._reverse_reversibles(network)
             reversibles = self._configure_standard_attributes(
-                reversibles, self.config["standard_links"]
+                reversibles, self.config.standard_links
             )
             network.update(reversibles)
 
         # create reverse walk links on one_way arterials/collectors
         reverse_walk_links = self._create_reverse_walk_links(network)
         reverse_walk_links = self._configure_emme_walk_attributes(
-            reverse_walk_links, self.config["walk_links"]
+            reverse_walk_links, self.config.walk_links
         )
 
         # find duplicate links due to OSM network having one-way streets sharing samee IJ JI
@@ -109,12 +109,12 @@ class BuildScenarioLinks(object):
         # configure weave link attributes
         weave_links = network[network["FacilityType"] == 98]
         weave_links = self._configure_weave_link_attributes(
-            weave_links, self.config["weave_links"]
+            weave_links, self.config.weave_links
         )
         network.update(weave_links)
 
         # cpnfigure HOT lane tolls
-        for k, v in self.config["hot_tolls"].items():
+        for k, v in self.config.hot_tolls.items():
             hot_links = network[
                 (network["IJLanesHOV" + self.time_period] == k)
                 & (network["is_managed"] == 1)
@@ -125,7 +125,7 @@ class BuildScenarioLinks(object):
         network["bkfac"] = network["IJBikeType"]
 
         network = network[
-            self.config["emme_link_columns"] + self.config["additional_keep_columns"]
+            self.config.emme_link_columns + self.config.additional_keep_columns
         ]
         network.i = network.i.astype(int)
         network.j = network.j.astype(int)
@@ -205,12 +205,6 @@ class BuildScenarioLinks(object):
         # flip geometry
         flipped_geom = two_way_edges.geometry.apply(self._flip_edges)
         two_way_edges.geometry.update(flipped_geom)
-        # flip attributes:
-        # switch_columns = [x[1] + x[0] + x[2:] for x in self.config['dir_columns']]
-        # rename_dict = dict(zip(self.config['dir_columns'], switch_columns))
-        ## also INode and Jnode
-        # rename_dict['NewINode'] = 'NewJNode'
-        # rename_dict['NewJNode'] = 'NewINode'
         # switch IJ & JI attributes for edges that are digitized in the opposite direction of the project
         cols = self._switch_attributes_dict()
         two_way_edges = two_way_edges.rename(columns=cols)
@@ -218,7 +212,7 @@ class BuildScenarioLinks(object):
 
     def _create_reverse_walk_links(self, network):
         reverse_walk_links = network[
-            network.FacilityType.isin(self.config["reverse_walk_link_facility_types"])
+            network.FacilityType.isin(self.config.reverse_walk_link_facility_types)
         ]
         reverse_walk_links = reverse_walk_links[
             (reverse_walk_links["Oneway"] == 0) | (reverse_walk_links["Oneway"] == 1)
@@ -238,7 +232,7 @@ class BuildScenarioLinks(object):
         return LineString(line)
 
     def _switch_attributes_dict(self):
-        cols = self.config["dir_columns"] + self.config["dir_toll_columns"]
+        cols = self.config.dir_columns + self.config.dir_toll_columns
         switch_columns = [x[1] + x[0] + x[2:] for x in cols]
         rename_dict = dict(zip(cols, switch_columns))
         # also INode and Jnode
@@ -311,20 +305,19 @@ class BuildScenarioLinks(object):
         return edges
 
     def _configure_hov_attributes(self, edges):
-
         # first recode modes to the HOV lanes field, which is a lookup for type of HOV and number of lanes
         edges.modes = edges["IJLanesHOV" + self.time_period]
         # Now use dict to recode
-        edges.modes.replace(self.config["hov_modes"], inplace=True)
+        edges.modes.replace(self.config.hov_modes, inplace=True)
         edges.lanes = edges["IJLanesHOV" + self.time_period]
-        edges.lanes.replace(self.config["hov_lanes"], inplace=True)
-        edges.ul1 = edges[self.config["hov_capacity"]]
+        edges.lanes.replace(self.config.hov_lanes, inplace=True)
+        edges.ul1 = edges[self.config.hov_capacity]
         edges.i = edges.NewINode
         edges.j = edges.NewJNode
         return edges
 
     def _configure_hot_lane_tolls(self, edges, col_list):
-        rate = self.config["hot_rate_dict"][self.time_period]
+        rate = self.config.hot_rate_dict[self.time_period]
         for col in col_list:
             edges[col] = edges[col] + (rate * edges.length) / 5280
         return edges
@@ -332,7 +325,7 @@ class BuildScenarioLinks(object):
     def _configure_transit_links(self, edges):
         edges.ul2 = edges.ul2.astype(float)
         edges.ul2 = np.where(
-            edges["FacilityType"].isin(self.config["link_time_facility_types"]),
+            edges["FacilityType"].isin(self.config.link_time_facility_types),
             edges.Processing_x / 1000.0,
             edges.ul2,
         )
@@ -340,7 +333,7 @@ class BuildScenarioLinks(object):
 
     def _configure_BAT_links(self, edges, look_up_dict):
         # ID BAT lanes by there mode strng
-        modes = self.config["hov_modes"][3]
+        modes = self.config.hov_modes[3]
         edges.vdf = np.where(edges["modes"] == modes, look_up_dict["vdf"], edges.vdf)
         # edges.FacilityType = np.where(edges['modes']==modes, 0, edges.FacilityType)
         edges.ul1 = np.where(edges["modes"] == modes, look_up_dict["ul1"], edges.ul1)
